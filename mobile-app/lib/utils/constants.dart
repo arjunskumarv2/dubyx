@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'Dubyx';
-  static const String apiBaseUrl = 'http://localhost:5000/api';
+  static const String apiBaseUrl = 'https://dubyx-api.onrender.com/api';
 
   // Qatar brand colors
   static const int primaryColor = 0xFF8D1B3D;
