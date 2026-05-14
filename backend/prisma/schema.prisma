@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  SALESMAN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  DAMAGED
+  EXPIRED
+  ADJUSTED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  CREDIT_CARD
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  password    String
+  role        Role     @default(SALESMAN)
+  isActive    Boolean  @default(true)
+  avatar      String?
+  area        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
+  gpsLogs     GpsLog[]
+  collections Collection[]
+  invoices    Invoice[]
+
+  @@map("users")
+}
+
+model Customer {
+  id           String   @id @default(uuid())
+  shopName     String
+  ownerName    String
+  phone        String
+  email        String?
+  address      String
+  area         String
+  route        String?
+  latitude     Float?
+  longitude    Float?
+  creditLimit  Float    @default(0)
+  taxNumber    String?
+  photos       String[]
+  notes        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders       Order[]
+  collections  Collection[]
+  invoices     Invoice[]
+
+  @@map("customers")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  name           String
+  sku            String    @unique
+  barcode        String?
+  description    String?
+  categoryId     String
+  category       Category  @relation(fields: [categoryId], references: [id])
+  sellingPrice   Float
+  costPrice      Float
+  taxRate        Float     @default(0)
+  unit           String    @default("PCS")
+  currentStock   Int       @default(0)
+  minStock       Int       @default(10)
+  expiryDate     DateTime?
+  image          String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+
+  @@map("products")
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  orderNumber  String      @unique
+  customerId   String
+  customer     Customer    @relation(fields: [customerId], references: [id])
+  salesmanId   String
+  salesman     User        @relation(fields: [salesmanId], references: [id])
+  status       OrderStatus @default(PENDING)
+  subtotal     Float
+  taxAmount    Float       @default(0)
+  discount     Float       @default(0)
+  total        Float
+  notes        String?
+  deliveryDate DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items        OrderItem[]
+  invoice      Invoice?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+  discount  Float   @default(0)
+  taxRate   Float   @default(0)
+  total     Float
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
+  orderId        String        @unique
+  order          Order         @relation(fields: [orderId], references: [id])
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  generatedById  String
+  generatedBy    User          @relation(fields: [generatedById], references: [id])
+  paymentStatus  PaymentStatus @default(PENDING)
+  subtotal       Float
+  taxAmount      Float         @default(0)
+  discount       Float         @default(0)
+  total          Float
+  paidAmount     Float         @default(0)
+  dueDate        DateTime?
+  notes          String?
+  pdfPath        String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  collections    Collection[]
+
+  @@map("invoices")
+}
+
+model Collection {
+  id           String        @id @default(uuid())
+  invoiceId    String
+  invoice      Invoice       @relation(fields: [invoiceId], references: [id])
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  collectedById String
+  collectedBy  User          @relation(fields: [collectedById], references: [id])
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  reference    String?
+  notes        String?
+  collectedAt  DateTime      @default(now())
+
+  @@map("collections")
+}
+
+model StockMovement {
+  id          String            @id @default(uuid())
+  productId   String
+  product     Product           @relation(fields: [productId], references: [id])
+  type        StockMovementType
+  quantity    Int
+  reason      String?
+  reference   String?
+  createdAt   DateTime          @default(now())
+
+  @@map("stock_movements")
+}
+
+model GpsLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  speed     Float?
+  heading   Float?
+  timestamp DateTime @default(now())
+
+  @@map("gps_logs")
+}
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}

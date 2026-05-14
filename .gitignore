@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+uploads/*
+!uploads/.gitkeep
+prisma/migrations/
+.vercel/
+.flutter-plugins
+.flutter-plugins-dependencies
+mobile-app/.dart_tool/
+mobile-app/build/
+mobile-app/.packages
