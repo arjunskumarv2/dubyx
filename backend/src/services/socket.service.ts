@@ -55,9 +55,9 @@ export const setupSocketIO = (io: Server) => {
 
         // Broadcast to admins
         io.to('admins').emit('location:updated', {
+          ...log,
           userId: user.id,
           name: user.name,
-          ...log,
         });
       } catch (err) {
         console.error('GPS log error:', err);
