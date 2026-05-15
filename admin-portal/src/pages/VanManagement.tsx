@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Truck, Plus, Package, RefreshCw, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
-import api from '../lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Truck, Plus, RefreshCw, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import type { AxiosResponse } from 'axios';
+import api from '../services/api';
 
 interface VanLoadItem {
   id: string;
@@ -54,17 +55,17 @@ export default function VanManagement() {
 
   const { data: vanLoads = [], isLoading } = useQuery<VanLoad[]>({
     queryKey: ['van-loads', filterStatus],
-    queryFn: () => api.get(`/van-loads${filterStatus ? `?status=${filterStatus}` : ''}`).then(r => r.data),
+    queryFn: () => api.get(`/van-loads${filterStatus ? `?status=${filterStatus}` : ''}`).then((r: AxiosResponse<VanLoad[]>) => r.data),
   });
 
   const { data: salesmen = [] } = useQuery<User[]>({
     queryKey: ['salesmen'],
-    queryFn: () => api.get('/users?role=SALESMAN').then(r => r.data),
+    queryFn: () => api.get('/users?role=SALESMAN').then((r: AxiosResponse<User[]>) => r.data),
   });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['products-active'],
-    queryFn: () => api.get('/products').then(r => r.data),
+    queryFn: () => api.get('/products').then((r: AxiosResponse<Product[]>) => r.data),
   });
 
   return (
