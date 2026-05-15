@@ -46,8 +46,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text('Welcome, ${user?.name ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
         ]),
         actions: [
-          IconButton(icon: const Icon(Iconsax.notification, color: Colors.white), onPressed: () {}),
-          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Iconsax.notification, color: Colors.white),
+            onPressed: () {},
+          ),
+          PopupMenuButton<String>(
+            icon: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white24,
+              child: Text(
+                (user?.name ?? 'U').substring(0, 1).toUpperCase(),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            onSelected: (val) async {
+              if (val == 'logout') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Logout', style: TextStyle(color: AppTheme.error)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && context.mounted) {
+                  await context.read<AuthProvider>().logout();
+                }
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(user?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textDark)),
+                  Text(user?.role ?? '', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                ]),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'logout', child: Row(children: [
+                Icon(Iconsax.logout, size: 18, color: AppTheme.error),
+                SizedBox(width: 10),
+                Text('Logout', style: TextStyle(color: AppTheme.error, fontWeight: FontWeight.w600)),
+              ])),
+            ],
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: RefreshIndicator(
