@@ -22,14 +22,25 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  String? _emailError;
+  String? _pwdError;
+
   Future<void> _login() async {
+    setState(() { _emailError = null; _pwdError = null; });
+    if (_emailCtrl.text.trim().isEmpty) { setState(() => _emailError = 'Email is required'); return; }
+    if (!_emailCtrl.text.contains('@')) { setState(() => _emailError = 'Enter a valid email'); return; }
+    if (_pwdCtrl.text.isEmpty) { setState(() => _pwdError = 'Password is required'); return; }
+
     final auth = context.read<AuthProvider>();
     final ok = await auth.login(_emailCtrl.text.trim(), _pwdCtrl.text);
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Login failed'), backgroundColor: AppTheme.error),
-      );
+      final msg = auth.error ?? 'Login failed';
+      if (msg.toLowerCase().contains('password') || msg.toLowerCase().contains('credentials') || msg.toLowerCase().contains('invalid')) {
+        setState(() => _pwdError = 'Incorrect email or password');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppTheme.error));
+      }
     }
   }
 
@@ -83,9 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'your@email.com',
-                          prefixIcon: Icon(Icons.email_outlined, size: 18, color: AppTheme.textGray),
+                          prefixIcon: const Icon(Icons.email_outlined, size: 18, color: AppTheme.textGray),
+                          errorText: _emailError,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -98,6 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           hintText: '••••••••',
                           prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppTheme.textGray),
+                          errorText: _pwdError,
                           suffixIcon: IconButton(
                             icon: Icon(_showPwd ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppTheme.textGray),
                             onPressed: () => setState(() => _showPwd = !_showPwd),

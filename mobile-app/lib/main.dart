@@ -10,6 +10,7 @@ import 'screens/customers/customers_screen.dart';
 import 'screens/billing/invoices_screen.dart';
 import 'screens/collections/collections_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
+import 'screens/routes/route_screen.dart';
 import 'theme/app_theme.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -86,6 +87,7 @@ class _MainShellState extends State<MainShell> {
     const DashboardScreen(),
     const OrdersScreen(),
     const CustomersScreen(),
+    const RouteScreen(),
     const InvoicesScreen(),
     const CollectionsScreen(),
   ];
@@ -107,8 +109,9 @@ class _MainShellState extends State<MainShell> {
               _NavItem(icon: Iconsax.home, label: 'Home', index: 0, current: _index, onTap: () => setState(() => _index = 0)),
               _NavItem(icon: Iconsax.shopping_cart, label: 'Orders', index: 1, current: _index, onTap: () => setState(() => _index = 1)),
               _NavItem(icon: Iconsax.people, label: 'Customers', index: 2, current: _index, onTap: () => setState(() => _index = 2)),
-              _NavItem(icon: Iconsax.document_text, label: 'Invoices', index: 3, current: _index, onTap: () => setState(() => _index = 3)),
-              _NavItem(icon: Iconsax.money_recive, label: 'Collect', index: 4, current: _index, onTap: () => setState(() => _index = 4)),
+              _NavItem(icon: Icons.route_outlined, label: 'Routes', index: 3, current: _index, onTap: () => setState(() => _index = 3)),
+              _NavItem(icon: Iconsax.document_text, label: 'Invoices', index: 4, current: _index, onTap: () => setState(() => _index = 4)),
+              _NavItem(icon: Iconsax.money_recive, label: 'Collect', index: 5, current: _index, onTap: () => setState(() => _index = 5)),
             ]),
           ),
         ),

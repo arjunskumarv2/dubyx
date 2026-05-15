@@ -13,6 +13,7 @@ class PdfService {
   static const _gold = PdfColor.fromInt(0xFFC9A84C);
   static const _gray = PdfColor.fromInt(0xFF6B7280);
   static const _lightGray = PdfColor.fromInt(0xFFF3F4F6);
+  static const _whiteLight = PdfColor(1, 1, 1, 0.75);
 
   Future<List<int>> generateInvoicePdf({
     required Invoice invoice,
@@ -44,9 +45,9 @@ class PdfService {
                 pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                   pw.Text(companyName, style: pw.TextStyle(color: PdfColors.white, fontSize: 22, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 4),
-                  pw.Text(companyAddress, style: const pw.TextStyle(color: PdfColors.white70, fontSize: 9)),
-                  pw.Text('$companyPhone  |  $companyEmail', style: const pw.TextStyle(color: PdfColors.white70, fontSize: 9)),
-                  if (trn.isNotEmpty) pw.Text('TRN: $trn', style: const pw.TextStyle(color: PdfColors.white70, fontSize: 9)),
+                  pw.Text(companyAddress, style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
+                  pw.Text('$companyPhone  |  $companyEmail', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
+                  if (trn.isNotEmpty) pw.Text('TRN: $trn', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
                 ]),
                 pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
                   pw.Text('INVOICE', style: pw.TextStyle(color: _gold, fontSize: 24, fontWeight: pw.FontWeight.bold)),
@@ -142,7 +143,7 @@ class PdfService {
             padding: const pw.EdgeInsets.all(12),
             decoration: const pw.BoxDecoration(color: _maroon, borderRadius: pw.BorderRadius.all(pw.Radius.circular(8))),
             child: pw.Center(child: pw.Text('Thank you for your business! | $companyName | Doha, Qatar',
-              style: const pw.TextStyle(color: PdfColors.white70, fontSize: 9))),
+              style: const pw.TextStyle(color: _whiteLight, fontSize: 9))),
           ),
         ],
       ),

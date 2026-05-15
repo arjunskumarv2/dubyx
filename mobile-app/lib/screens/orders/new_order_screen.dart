@@ -118,11 +118,11 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Row(children: List.generate(3, (i) => Expanded(child: Row(children: [
             Container(width: 24, height: 24, decoration: BoxDecoration(
-              color: i <= _step ? AppTheme.gold : Colors.white30, shape: BoxShape.circle),
+              color: i <= _step ? AppTheme.gold : Colors.white.withOpacity(0.3), shape: BoxShape.circle),
               child: Center(child: Text('${i+1}', style: TextStyle(color: i <= _step ? Colors.white : Colors.white60, fontSize: 11, fontWeight: FontWeight.bold)))),
-            if (i < 2) Expanded(child: Container(height: 2, color: i < _step ? AppTheme.gold : Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 4))),
+            if (i < 2) Expanded(child: Container(height: 2, color: i < _step ? AppTheme.gold : Colors.white.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 4))),
           ]))),
-        ),
+        )),
 
         Expanded(child: _step == 0 ? _buildCustomerStep() : _step == 1 ? _buildProductStep() : _buildReviewStep()),
 
@@ -184,25 +184,53 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           child: ListTile(
             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             subtitle: Text('${p.sku} • QAR ${p.sellingPrice.toStringAsFixed(2)} • ${p.currentStock} ${p.unit}', style: const TextStyle(fontSize: 11)),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (cartQty > 0) ...[
-                GestureDetector(
-                  onTap: () => setState(() {
-                    final idx = _cart.indexWhere((c) => c.product.id == p.id);
-                    if (_cart[idx].quantity > 1) _cart[idx].quantity--;
-                    else _cart.removeAt(idx);
-                  }),
-                  child: Container(width: 28, height: 28, decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.remove, size: 16, color: AppTheme.primary)),
+            trailing: cartQty > 0
+              ? SizedBox(
+                  width: 100,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        final idx = _cart.indexWhere((c) => c.product.id == p.id);
+                        if (_cart[idx].quantity > 1) _cart[idx].quantity--;
+                        else _cart.removeAt(idx);
+                      }),
+                      child: Container(width: 26, height: 26, decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(Icons.remove, size: 14, color: AppTheme.primary)),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        controller: TextEditingController(text: '$cartQty')
+                          ..selection = TextSelection.collapsed(offset: '$cartQty'.length),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                          border: InputBorder.none,
+                        ),
+                        onChanged: (v) {
+                          final n = int.tryParse(v);
+                          if (n == null || n < 1) return;
+                          setState(() {
+                            final idx = _cart.indexWhere((c) => c.product.id == p.id);
+                            if (idx >= 0) _cart[idx].quantity = n;
+                          });
+                        },
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => _addToCart(p),
+                      child: Container(width: 26, height: 26, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(Icons.add, size: 14, color: Colors.white)),
+                    ),
+                  ]),
+                )
+              : GestureDetector(
+                  onTap: () => _addToCart(p),
+                  child: Container(width: 28, height: 28, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.add, size: 16, color: Colors.white)),
                 ),
-                Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text('$cartQty', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-              ],
-              GestureDetector(
-                onTap: () => _addToCart(p),
-                child: Container(width: 28, height: 28, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.add, size: 16, color: Colors.white)),
-              ),
-            ]),
           ),
         );
       },

@@ -28,10 +28,12 @@ class ApiService {
     };
   }
 
+  static const _timeout = Duration(seconds: 60);
+
   Future<dynamic> get(String path, {Map<String, String>? params}) async {
     var uri = Uri.parse('${AppConstants.apiBaseUrl}$path');
     if (params != null) uri = uri.replace(queryParameters: params);
-    final res = await http.get(uri, headers: await _headers);
+    final res = await http.get(uri, headers: await _headers).timeout(_timeout);
     return _handle(res);
   }
 
@@ -40,7 +42,7 @@ class ApiService {
       Uri.parse('${AppConstants.apiBaseUrl}$path'),
       headers: await _headers,
       body: jsonEncode(body),
-    );
+    ).timeout(_timeout);
     return _handle(res);
   }
 
@@ -49,12 +51,25 @@ class ApiService {
       Uri.parse('${AppConstants.apiBaseUrl}$path'),
       headers: await _headers,
       body: jsonEncode(body),
-    );
+    ).timeout(_timeout);
+    return _handle(res);
+  }
+
+  Future<dynamic> multipartPost(String path, Map<String, String> fields, Map<String, String> files) async {
+    final t = await token;
+    final request = http.MultipartRequest('POST', Uri.parse('${AppConstants.apiBaseUrl}$path'));
+    if (t != null) request.headers['Authorization'] = 'Bearer $t';
+    request.fields.addAll(fields);
+    for (final entry in files.entries) {
+      request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+    }
+    final streamed = await request.send().timeout(_timeout);
+    final res = await http.Response.fromStream(streamed);
     return _handle(res);
   }
 
   Future<List<int>> getBytes(String path) async {
-    final res = await http.get(Uri.parse('${AppConstants.apiBaseUrl}$path'), headers: await _headers);
+    final res = await http.get(Uri.parse('${AppConstants.apiBaseUrl}$path'), headers: await _headers).timeout(_timeout);
     if (res.statusCode == 200) return res.bodyBytes;
     throw Exception('Failed to fetch file');
   }

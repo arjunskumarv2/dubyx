@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -56,7 +57,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
         settings: _settings,
       );
       if (!mounted) return;
-      await Printing.layoutPdf(onLayout: (_) async => pdfBytes, name: widget.invoice.invoiceNumber);
+      await Printing.layoutPdf(onLayout: (_) async => Uint8List.fromList(pdfBytes), name: widget.invoice.invoiceNumber);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF Error: $e'), backgroundColor: AppTheme.error));
     } finally {
@@ -75,7 +76,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
       if (!mounted) return;
 
       // Share via system share sheet which includes WhatsApp
-      await Printing.sharePdf(bytes: pdfBytes, filename: '${widget.invoice.invoiceNumber}.pdf');
+      await Printing.sharePdf(bytes: Uint8List.fromList(pdfBytes), filename: '${widget.invoice.invoiceNumber}.pdf');
     } catch (e) {
       if (mounted) {
         // Fallback: open WhatsApp with text
@@ -131,7 +132,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('BILL TO', style: TextStyle(color: Colors.white40, fontSize: 9, fontWeight: FontWeight.bold)),
+                    Text('BILL TO', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),
                     Text(inv.customerName, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
                     Text(inv.customerPhone, style: const TextStyle(color: Colors.white60, fontSize: 11)),
