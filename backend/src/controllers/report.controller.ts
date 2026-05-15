@@ -283,3 +283,42 @@ export const getCollectionReport = async (req: Request, res: Response) => {
 
   res.json({ collections, total, byMethod });
 };
+
+export const getAgingReport = async (_req: Request, res: Response) => {
+  const now = new Date();
+
+  // Auto-mark overdue first
+  await prisma.invoice.updateMany({
+    where: { dueDate: { lt: now }, paymentStatus: { in: ['PENDING', 'PARTIAL'] } },
+    data: { paymentStatus: 'OVERDUE' },
+  });
+
+  const invoices = await prisma.invoice.findMany({
+    where: { paymentStatus: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] } },
+    include: { customer: { select: { id: true, shopName: true, ownerName: true, phone: true, area: true } } },
+    orderBy: { dueDate: 'asc' },
+  });
+
+  const buckets = { current: [] as any[], days30: [] as any[], days60: [] as any[], days90: [] as any[], over90: [] as any[] };
+  let totals = { current: 0, days30: 0, days60: 0, days90: 0, over90: 0 };
+
+  for (const inv of invoices) {
+    const balance = inv.total - inv.paidAmount;
+    const dueDate = inv.dueDate ?? inv.createdAt;
+    const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    const row = {
+      id: inv.id, invoiceNumber: inv.invoiceNumber, customer: inv.customer,
+      total: inv.total, paidAmount: inv.paidAmount, balance,
+      dueDate: inv.dueDate, paymentStatus: inv.paymentStatus, daysOverdue,
+    };
+    if (daysOverdue <= 0)        { buckets.current.push(row);  totals.current  += balance; }
+    else if (daysOverdue <= 30)  { buckets.days30.push(row);   totals.days30   += balance; }
+    else if (daysOverdue <= 60)  { buckets.days60.push(row);   totals.days60   += balance; }
+    else if (daysOverdue <= 90)  { buckets.days90.push(row);   totals.days90   += balance; }
+    else                          { buckets.over90.push(row);   totals.over90   += balance; }
+  }
+
+  const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+  res.json({ buckets, totals, grandTotal });
+};
+

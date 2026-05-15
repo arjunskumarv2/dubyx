@@ -14,6 +14,12 @@ export const getInvoices = async (req: AuthRequest, res: Response) => {
   const { paymentStatus, customerId, from, to, search } = req.query;
   const isSalesman = req.user!.role === 'SALESMAN';
 
+  // Auto-mark overdue invoices
+  await prisma.invoice.updateMany({
+    where: { dueDate: { lt: new Date() }, paymentStatus: { in: ['PENDING', 'PARTIAL'] } },
+    data: { paymentStatus: 'OVERDUE' },
+  });
+
   const invoices = await prisma.invoice.findMany({
     where: {
       ...(isSalesman ? { generatedById: req.user!.id } : {}),
@@ -75,6 +81,10 @@ export const generateInvoice = async (req: AuthRequest, res: Response) => {
 
   const invoiceNumber = await generateInvoiceNumber();
 
+  // Default due date: 30 days from today (net 30)
+  const defaultDueDate = new Date();
+  defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+
   const invoice = await prisma.invoice.create({
     data: {
       invoiceNumber,
@@ -87,7 +97,7 @@ export const generateInvoice = async (req: AuthRequest, res: Response) => {
       discount: order.discount,
       total: order.total,
       paidAmount: 0,
-      dueDate: dueDate ? new Date(dueDate) : null,
+      dueDate: dueDate ? new Date(dueDate) : defaultDueDate,
       notes,
     },
     include: {
@@ -152,9 +162,12 @@ export const recordPayment = async (req: AuthRequest, res: Response) => {
   const { amount, method, reference, notes } = req.body;
   const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } });
   if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+  if (invoice.paymentStatus === 'PAID') return res.status(400).json({ message: 'Invoice is already fully paid' });
 
-  const newPaidAmount = invoice.paidAmount + amount;
-  const paymentStatus = newPaidAmount >= invoice.total ? 'PAID' : newPaidAmount > 0 ? 'PARTIAL' : 'PENDING';
+  const balance = invoice.total - invoice.paidAmount;
+  const paymentAmount = Math.min(amount, balance); // cap at balance
+  const newPaidAmount = invoice.paidAmount + paymentAmount;
+  const paymentStatus = newPaidAmount >= invoice.total ? 'PAID' : 'PARTIAL';
 
   await prisma.$transaction([
     prisma.invoice.update({
@@ -166,7 +179,7 @@ export const recordPayment = async (req: AuthRequest, res: Response) => {
         invoiceId: invoice.id,
         customerId: invoice.customerId,
         collectedById: req.user!.id,
-        amount,
+        amount: paymentAmount,
         method: method as any,
         reference,
         notes,
@@ -174,5 +187,5 @@ export const recordPayment = async (req: AuthRequest, res: Response) => {
     }),
   ]);
 
-  res.json({ message: 'Payment recorded', newPaidAmount, paymentStatus });
+  res.json({ message: 'Payment recorded', paidAmount: paymentAmount, newPaidAmount, paymentStatus, balance: invoice.total - newPaidAmount });
 };

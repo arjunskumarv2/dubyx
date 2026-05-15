@@ -93,6 +93,7 @@ router.get('/reports/collections', authenticate, authorize(...adminRoles, 'MANAG
 router.get('/reports/stock', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getStockReport);
 router.get('/reports/product-wise', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getProductWiseReport);
 router.get('/reports/balance', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getBalanceReport);
+router.get('/reports/aging', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getAgingReport);
 
 // Routes & Check-ins
 router.get('/routes', authenticate, routeCtrl.getRoutes);
