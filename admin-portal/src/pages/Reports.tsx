@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, TrendingUp, Package, DollarSign, BarChart3, Users } from 'lucide-react';
+import { Calendar, TrendingUp, Package, DollarSign, BarChart3, Clock, Users } from 'lucide-react';
 import api from '../services/api';
 
 const COLORS = ['#8D1B3D', '#C9A84C', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'];
@@ -10,7 +10,7 @@ const fmt = (n: number) => `QAR ${n.toFixed(0)}`;
 const today = new Date().toISOString().slice(0, 10);
 const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
 
-type Tab = 'sales' | 'stock' | 'product' | 'balance';
+type Tab = 'sales' | 'stock' | 'product' | 'balance' | 'aging';
 
 export default function Reports() {
   const [tab, setTab] = useState<Tab>('sales');
@@ -54,11 +54,18 @@ export default function Reports() {
     enabled: tab === 'balance',
   });
 
+  const { data: aging } = useQuery({
+    queryKey: ['aging-report'],
+    queryFn: () => api.get('/reports/aging').then(r => r.data),
+    enabled: tab === 'aging',
+  });
+
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: 'sales', label: 'Sales Performance', icon: TrendingUp },
     { key: 'stock', label: 'Stock Report', icon: Package },
     { key: 'product', label: 'Product Wise', icon: BarChart3 },
     { key: 'balance', label: 'Balance', icon: DollarSign },
+    { key: 'aging', label: 'Aging', icon: Clock },
   ];
 
   return (
@@ -317,6 +324,79 @@ export default function Reports() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Aging Report */}
+      {tab === 'aging' && aging && (
+        <div className="space-y-5">
+          {/* Summary buckets */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { label: 'Current', key: 'current', color: 'text-green-600', bg: 'bg-green-50' },
+              { label: '1–30 Days', key: 'days30', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+              { label: '31–60 Days', key: 'days60', color: 'text-orange-600', bg: 'bg-orange-50' },
+              { label: '61–90 Days', key: 'days90', color: 'text-red-500', bg: 'bg-red-50' },
+              { label: '90+ Days', key: 'over90', color: 'text-red-700', bg: 'bg-red-100' },
+            ].map(({ label, key, color, bg }) => (
+              <div key={key} className={`card p-4 ${bg}`}>
+                <p className="text-xs text-gray-500 font-medium">{label}</p>
+                <p className={`text-xl font-bold mt-1 ${color}`}>{fmt(aging.totals[key])}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{aging.buckets[key]?.length || 0} invoices</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="card p-4 flex items-center justify-between">
+            <span className="font-semibold text-gray-700">Total Outstanding</span>
+            <span className="text-2xl font-bold text-[#8D1B3D]">{fmt(aging.grandTotal)}</span>
+          </div>
+
+          {/* Aging table per bucket */}
+          {[
+            { label: 'Current (Not Yet Due)', key: 'current', headerColor: 'bg-green-50' },
+            { label: 'Overdue 1–30 Days', key: 'days30', headerColor: 'bg-yellow-50' },
+            { label: 'Overdue 31–60 Days', key: 'days60', headerColor: 'bg-orange-50' },
+            { label: 'Overdue 61–90 Days', key: 'days90', headerColor: 'bg-red-50' },
+            { label: 'Overdue 90+ Days', key: 'over90', headerColor: 'bg-red-100' },
+          ].filter(({ key }) => aging.buckets[key]?.length > 0).map(({ label, key, headerColor }) => (
+            <div key={key} className="card overflow-hidden">
+              <div className={`px-5 py-3 ${headerColor}`}>
+                <h3 className="font-semibold text-gray-800 text-sm">{label} — {aging.buckets[key].length} invoices</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 border-b">
+                    {['Invoice #', 'Customer', 'Area', 'Due Date', 'Days Overdue', 'Total', 'Balance', 'Status'].map(h =>
+                      <th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    )}
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {aging.buckets[key].map((inv: any) => (
+                      <tr key={inv.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-mono text-xs text-[#8D1B3D]">{inv.invoiceNumber}</td>
+                        <td className="px-4 py-3 font-medium">{inv.customer?.shopName}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{inv.customer?.area || '—'}</td>
+                        <td className="px-4 py-3 text-xs">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`font-bold text-xs ${inv.daysOverdue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {inv.daysOverdue > 0 ? `${inv.daysOverdue}d` : 'Not due'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{fmt(inv.total)}</td>
+                        <td className="px-4 py-3 font-bold text-[#8D1B3D]">{fmt(inv.balance)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${inv.paymentStatus === 'OVERDUE' ? 'bg-red-100 text-red-700' : inv.paymentStatus === 'PARTIAL' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {inv.paymentStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
