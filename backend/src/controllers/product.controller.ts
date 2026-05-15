@@ -87,3 +87,13 @@ export const createCategory = async (req: Request, res: Response) => {
   const category = await prisma.category.create({ data: { name, description } });
   res.status(201).json(category);
 };
+
+export const deleteCategory = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const productCount = await prisma.product.count({ where: { categoryId: id, isActive: true } });
+  if (productCount > 0) {
+    return res.status(400).json({ message: `Cannot delete: ${productCount} active product(s) in this category` });
+  }
+  await prisma.category.update({ where: { id }, data: { isActive: false } });
+  res.json({ message: 'Category deleted' });
+};

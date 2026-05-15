@@ -151,6 +151,115 @@ export const getSalesmanPerformance = async (req: Request, res: Response) => {
   res.json(performance.sort((a, b) => b.totalRevenue - a.totalRevenue));
 };
 
+export const getStockReport = async (_req: Request, res: Response) => {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    include: { category: true },
+    orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }],
+  });
+
+  const byCategory = products.reduce((acc: Record<string, any>, p) => {
+    const cat = p.category.name;
+    if (!acc[cat]) acc[cat] = { name: cat, products: 0, totalStock: 0, costValue: 0, sellingValue: 0 };
+    acc[cat].products++;
+    acc[cat].totalStock += p.currentStock;
+    acc[cat].costValue += p.currentStock * p.costPrice;
+    acc[cat].sellingValue += p.currentStock * p.sellingPrice;
+    return acc;
+  }, {});
+
+  res.json({
+    products,
+    totalItems: products.length,
+    totalCostValue: products.reduce((s, p) => s + p.currentStock * p.costPrice, 0),
+    totalSellingValue: products.reduce((s, p) => s + p.currentStock * p.sellingPrice, 0),
+    lowStockCount: products.filter(p => p.currentStock <= p.minStock).length,
+    outOfStockCount: products.filter(p => p.currentStock === 0).length,
+    byCategory: Object.values(byCategory),
+  });
+};
+
+export const getProductWiseReport = async (req: Request, res: Response) => {
+  const { from, to } = req.query;
+  const startDate = from ? new Date(from as string) : new Date(new Date().setDate(1));
+  const endDate = to ? new Date(to as string) : new Date();
+  endDate.setHours(23, 59, 59, 999);
+
+  const orderItems = await prisma.orderItem.findMany({
+    where: { order: { createdAt: { gte: startDate, lte: endDate }, status: { not: 'CANCELLED' } } },
+    include: { product: { include: { category: true } } },
+  });
+
+  const productStats = orderItems.reduce((acc: Record<string, any>, item) => {
+    const id = item.productId;
+    if (!acc[id]) acc[id] = { id, name: item.product.name, sku: item.product.sku, category: item.product.category.name, unit: item.product.unit, quantity: 0, revenue: 0, costValue: 0, orders: 0 };
+    acc[id].quantity += item.quantity;
+    acc[id].revenue += item.total;
+    acc[id].costValue += item.quantity * item.product.costPrice;
+    acc[id].orders++;
+    return acc;
+  }, {});
+
+  const products = Object.values(productStats).sort((a: any, b: any) => b.revenue - a.revenue);
+  res.json({
+    products,
+    totalRevenue: products.reduce((s: number, p: any) => s + p.revenue, 0),
+    totalQuantity: products.reduce((s: number, p: any) => s + p.quantity, 0),
+    totalProfit: products.reduce((s: number, p: any) => s + (p.revenue - p.costValue), 0),
+  });
+};
+
+export const getBalanceReport = async (req: Request, res: Response) => {
+  const { from, to } = req.query;
+  const startDate = from ? new Date(from as string) : new Date(new Date().setDate(1));
+  const endDate = to ? new Date(to as string) : new Date();
+  endDate.setHours(23, 59, 59, 999);
+
+  const [openingInvoices, periodSales, periodCollections, pendingInvoices] = await Promise.all([
+    prisma.invoice.aggregate({
+      where: { createdAt: { lt: startDate }, paymentStatus: { not: 'PAID' } },
+      _sum: { total: true, paidAmount: true },
+    }),
+    prisma.order.aggregate({
+      where: { createdAt: { gte: startDate, lte: endDate }, status: { not: 'CANCELLED' } },
+      _sum: { total: true },
+      _count: true,
+    }),
+    prisma.collection.aggregate({
+      where: { collectedAt: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+    }),
+    prisma.invoice.findMany({
+      where: { paymentStatus: { not: 'PAID' } },
+      include: { customer: { select: { shopName: true, area: true } } },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
+
+  const openingBalance = (openingInvoices._sum.total || 0) - (openingInvoices._sum.paidAmount || 0);
+  const totalSales = periodSales._sum.total || 0;
+  const totalCollected = periodCollections._sum.amount || 0;
+  const closingBalance = openingBalance + totalSales - totalCollected;
+
+  res.json({
+    openingBalance,
+    totalSales,
+    totalCollected,
+    closingBalance,
+    totalOrders: periodSales._count,
+    pendingInvoices: pendingInvoices.map(inv => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      customer: inv.customer.shopName,
+      area: inv.customer.area,
+      total: inv.total,
+      paidAmount: inv.paidAmount,
+      outstanding: inv.total - inv.paidAmount,
+      status: inv.paymentStatus,
+    })),
+  });
+};
+
 export const getCollectionReport = async (req: Request, res: Response) => {
   const { from, to } = req.query;
   const startDate = from ? new Date(from as string) : new Date(new Date().setDate(1));

@@ -14,6 +14,7 @@ import * as collectionCtrl from '../controllers/collection.controller';
 import * as gpsCtrl from '../controllers/gps.controller';
 import * as reportCtrl from '../controllers/report.controller';
 import * as settingsCtrl from '../controllers/settings.controller';
+import * as routeCtrl from '../controllers/route.controller';
 
 const router = Router();
 
@@ -55,6 +56,7 @@ router.put('/products/:id', authenticate, authorize(...adminRoles, 'MANAGER'), p
 router.post('/products/:id/adjust-stock', authenticate, authorize(...adminRoles, 'MANAGER'), productCtrl.adjustStock);
 router.get('/categories', authenticate, productCtrl.getCategories);
 router.post('/categories', authenticate, authorize(...adminRoles, 'MANAGER'), productCtrl.createCategory);
+router.delete('/categories/:id', authenticate, authorize(...adminRoles, 'MANAGER'), productCtrl.deleteCategory);
 
 // Orders
 router.get('/orders', authenticate, orderCtrl.getOrders);
@@ -83,11 +85,23 @@ router.get('/gps/route/:userId', authenticate, authorize(...adminRoles, 'MANAGER
 router.get('/gps/my-route', authenticate, gpsCtrl.getMyRoute);
 
 // Reports
-router.get('/reports/dashboard', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getDashboardStats);
+router.get('/reports/dashboard', authenticate, reportCtrl.getDashboardStats);
 router.get('/reports/sales', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getSalesReport);
 router.get('/reports/top-products', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getTopProducts);
 router.get('/reports/salesman-performance', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getSalesmanPerformance);
 router.get('/reports/collections', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getCollectionReport);
+router.get('/reports/stock', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getStockReport);
+router.get('/reports/product-wise', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getProductWiseReport);
+router.get('/reports/balance', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getBalanceReport);
+
+// Routes & Check-ins
+router.get('/routes', authenticate, routeCtrl.getRoutes);
+router.get('/routes/:id', authenticate, routeCtrl.getRoute);
+router.post('/routes', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.createRoute);
+router.put('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.updateRoute);
+router.delete('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.deleteRoute);
+router.post('/checkins', authenticate, routeCtrl.uploadSelfie.single('selfie'), routeCtrl.checkIn);
+router.get('/checkins', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.getCheckIns);
 
 // Settings
 router.get('/settings', authenticate, settingsCtrl.getSettings);

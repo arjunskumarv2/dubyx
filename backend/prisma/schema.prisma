@@ -61,6 +61,8 @@ model User {
   gpsLogs     GpsLog[]
   collections Collection[]
   invoices    Invoice[]
+  routes      Route[]
+  checkIns    CheckIn[]
 
   @@map("users")
 }
@@ -87,6 +89,8 @@ model Customer {
   orders       Order[]
   collections  Collection[]
   invoices     Invoice[]
+  routeStops   RouteStop[]
+  checkIns     CheckIn[]
 
   @@map("customers")
 }
@@ -244,4 +248,42 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 
   @@map("app_settings")
+}
+
+model Route {
+  id         String      @id @default(uuid())
+  name       String
+  salesmanId String
+  salesman   User        @relation(fields: [salesmanId], references: [id])
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  stops      RouteStop[]
+
+  @@map("routes")
+}
+
+model RouteStop {
+  id         String   @id @default(uuid())
+  routeId    String
+  route      Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  stopOrder  Int
+
+  @@map("route_stops")
+}
+
+model CheckIn {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  latitude    Float
+  longitude   Float
+  selfiePath  String?
+  notes       String?
+  checkedInAt DateTime @default(now())
+
+  @@map("check_ins")
 }
