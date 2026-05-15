@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Phone, MapPin, CreditCard, Eye } from 'lucide-react';
+import { Search, Plus, Phone, MapPin, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -31,6 +31,12 @@ export default function Customers() {
     onError: () => toast.error('Failed to add customer'),
   });
 
+  const toggleActive = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.put(`/customers/${id}`, { isActive }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['customers'] }); toast.success('Customer updated'); },
+    onError: () => toast.error('Failed to update customer'),
+  });
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
@@ -56,9 +62,14 @@ export default function Customers() {
                 <h3 className="font-semibold text-gray-900">{c.shopName}</h3>
                 <p className="text-sm text-gray-500">{c.ownerName}</p>
               </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              <button
+                onClick={e => { e.stopPropagation(); toggleActive.mutate({ id: c.id, isActive: !c.isActive }); }}
+                className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${c.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                title={c.isActive ? 'Click to deactivate' : 'Click to activate'}
+              >
+                {c.isActive ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
                 {c.isActive ? 'Active' : 'Inactive'}
-              </span>
+              </button>
             </div>
             <div className="space-y-1.5 text-sm text-gray-600">
               <div className="flex items-center gap-2"><Phone size={13} className="text-[#8D1B3D]" />{c.phone}</div>

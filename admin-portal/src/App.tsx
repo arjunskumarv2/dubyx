@@ -12,6 +12,7 @@ import GPSTracking from './pages/GPSTracking';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import RouteManagement from './pages/RouteManagement';
 
 const ProtectedRoute = ({ children, roles }: { children: JSX.Element; roles?: string[] }) => {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,7 @@ const AppRoutes = () => {
         <Route path="collections" element={<Collections />} />
         <Route path="gps" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><GPSTracking /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><Reports /></ProtectedRoute>} />
+        <Route path="routes" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><RouteManagement /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><Users /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><Settings /></ProtectedRoute>} />
       </Route>
