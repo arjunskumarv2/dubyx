@@ -349,33 +349,33 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                           ],
 
                           const SizedBox(height: 8),
-                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               const Text('Total', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                              Text('QAR ${fmt.format(inv.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textDark)),
-                            ]),
-                            if (!inv.isPaid)
-                              Row(children: [
-                                if (inv.balance > 0) Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                  const Text('Balance', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                  Text('QAR ${fmt.format(inv.balance)}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: statusColor)),
-                                ]),
-                                const SizedBox(width: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () => _showCollectModal(inv),
-                                  icon: const Icon(Iconsax.money_send, size: 14),
-                                  label: const Text('Collect'),
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    textStyle: const TextStyle(fontSize: 11),
-                                  ),
-                                ),
+                              Text('QAR ${fmt.format(inv.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppTheme.textDark)),
+                            ])),
+                            if (!inv.isPaid && inv.balance > 0) ...[
+                              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                const Text('Balance', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                Text('QAR ${fmt.format(inv.balance)}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: statusColor)),
                               ]),
+                              const SizedBox(width: 8),
+                            ],
+                            if (!inv.isPaid)
+                              ElevatedButton.icon(
+                                onPressed: () => _showCollectModal(inv),
+                                icon: const Icon(Iconsax.money_send, size: 13),
+                                label: const Text('Collect'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  textStyle: const TextStyle(fontSize: 11),
+                                ),
+                              ),
                             if (inv.isPaid)
                               const Row(children: [
-                                Icon(Icons.check_circle, color: AppTheme.success, size: 18),
+                                Icon(Icons.check_circle, color: AppTheme.success, size: 16),
                                 SizedBox(width: 4),
-                                Text('Paid in Full', style: TextStyle(color: AppTheme.success, fontWeight: FontWeight.w700, fontSize: 12)),
+                                Text('Paid', style: TextStyle(color: AppTheme.success, fontWeight: FontWeight.w700, fontSize: 12)),
                               ]),
                           ]),
                         ]),

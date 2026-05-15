@@ -65,6 +65,12 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
   if (!customer) return res.status(404).json({ message: 'Customer not found' });
   if (!customer.isActive) return res.status(400).json({ message: 'Customer account is inactive' });
 
+  // Check if salesman has an active van load
+  const activeVanLoad = await prisma.vanLoad.findFirst({
+    where: { salesmanId: req.user!.id, status: 'ACTIVE' },
+    include: { items: true },
+  });
+
   const orderNumber = await generateOrderNumber();
   let subtotal = 0;
   let taxAmount = 0;
@@ -73,8 +79,20 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) throw new Error(`Product not found`);
     if (!product.isActive) throw new Error(`Product "${product.name}" is no longer available`);
-    if (product.currentStock < item.quantity) {
-      throw new Error(`Insufficient stock for "${product.name}". Available: ${product.currentStock}, Requested: ${item.quantity}`);
+
+    if (activeVanLoad) {
+      // Validate against van stock
+      const vanItem = activeVanLoad.items.find(vi => vi.productId === item.productId);
+      if (!vanItem) throw new Error(`"${product.name}" is not in your van stock`);
+      const availableQty = vanItem.loadedQty - vanItem.soldQty - vanItem.returnedQty;
+      if (availableQty < item.quantity) {
+        throw new Error(`Insufficient van stock for "${product.name}". Available: ${availableQty}, Requested: ${item.quantity}`);
+      }
+    } else {
+      // Validate against master stock
+      if (product.currentStock < item.quantity) {
+        throw new Error(`Insufficient stock for "${product.name}". Available: ${product.currentStock}, Requested: ${item.quantity}`);
+      }
     }
 
     const itemDiscount = item.discount || 0;
@@ -111,26 +129,42 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     }
   }
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      customerId,
-      salesmanId: req.user!.id,
-      status: 'PENDING',
-      subtotal,
-      taxAmount,
-      discount: orderDiscount,
-      total,
-      notes,
-      deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
-      items: { create: orderItems },
-    },
-    include: {
-      customer: true,
-      salesman: { select: { id: true, name: true } },
-      items: { include: { product: true } },
-    },
+  const order = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        orderNumber,
+        customerId,
+        salesmanId: req.user!.id,
+        status: 'PENDING',
+        subtotal,
+        taxAmount,
+        discount: orderDiscount,
+        total,
+        notes,
+        deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+        items: { create: orderItems },
+      },
+      include: {
+        customer: true,
+        salesman: { select: { id: true, name: true } },
+        items: { include: { product: true } },
+      },
+    });
+
+    // Immediately deduct from van stock if salesman has active van load
+    if (activeVanLoad) {
+      for (const item of items as { productId: string; quantity: number }[]) {
+        const vanItem = activeVanLoad.items.find(vi => vi.productId === item.productId)!;
+        await tx.vanLoadItem.update({
+          where: { id: vanItem.id },
+          data: { soldQty: { increment: item.quantity } },
+        });
+      }
+    }
+
+    return created;
   });
+
   res.status(201).json(order);
 };
 
@@ -142,26 +176,35 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   });
   if (!order) return res.status(404).json({ message: 'Order not found' });
 
-  // Deduct stock when order is confirmed/delivered
+  // Deduct stock when order is confirmed/delivered (only if no van load handled it at order creation)
   if ((status === 'CONFIRMED' || status === 'DELIVERED') &&
       order.status === 'PENDING') {
-    await Promise.all(order.items.map(item =>
-      prisma.product.update({
-        where: { id: item.productId },
-        data: { currentStock: { decrement: item.quantity } },
-      })
-    ));
-    await Promise.all(order.items.map(item =>
-      prisma.stockMovement.create({
-        data: {
-          productId: item.productId,
-          type: 'OUT',
-          quantity: item.quantity,
-          reference: order.orderNumber,
-          reason: `Order ${order.orderNumber} confirmed`,
-        },
-      })
-    ));
+    const activeVanLoad = await prisma.vanLoad.findFirst({
+      where: { salesmanId: order.salesmanId, status: 'ACTIVE' },
+      include: { items: true },
+    });
+
+    if (!activeVanLoad) {
+      // Deduct from master stock
+      await Promise.all(order.items.map(item =>
+        prisma.product.update({
+          where: { id: item.productId },
+          data: { currentStock: { decrement: item.quantity } },
+        })
+      ));
+      await Promise.all(order.items.map(item =>
+        prisma.stockMovement.create({
+          data: {
+            productId: item.productId,
+            type: 'OUT',
+            quantity: item.quantity,
+            reference: order.orderNumber,
+            reason: `Order ${order.orderNumber} confirmed`,
+          },
+        })
+      ));
+    }
+    // If van load exists, soldQty was already incremented at order creation
   }
 
   // Restore stock if order is cancelled

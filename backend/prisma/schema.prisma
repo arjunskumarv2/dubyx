@@ -44,6 +44,12 @@ enum PaymentMethod {
   CREDIT_CARD
 }
 
+enum VanLoadStatus {
+  ACTIVE
+  RETURNED
+  CLOSED
+}
+
 model User {
   id          String   @id @default(uuid())
   name        String
@@ -63,6 +69,7 @@ model User {
   invoices    Invoice[]
   routes      Route[]
   checkIns    CheckIn[]
+  vanLoads    VanLoad[]
 
   @@map("users")
 }
@@ -129,6 +136,7 @@ model Product {
 
   orderItems     OrderItem[]
   stockMovements StockMovement[]
+  vanLoadItems   VanLoadItem[]
 
   @@map("products")
 }
@@ -271,6 +279,34 @@ model RouteStop {
   stopOrder  Int
 
   @@map("route_stops")
+}
+
+model VanLoad {
+  id          String        @id @default(uuid())
+  loadNumber  String        @unique
+  salesmanId  String
+  salesman    User          @relation(fields: [salesmanId], references: [id])
+  status      VanLoadStatus @default(ACTIVE)
+  notes       String?
+  loadedAt    DateTime      @default(now())
+  returnedAt  DateTime?
+  items       VanLoadItem[]
+
+  @@map("van_loads")
+}
+
+model VanLoadItem {
+  id          String   @id @default(uuid())
+  vanLoadId   String
+  vanLoad     VanLoad  @relation(fields: [vanLoadId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  loadedQty   Int
+  soldQty     Int      @default(0)
+  returnedQty Int      @default(0)
+
+  @@unique([vanLoadId, productId])
+  @@map("van_load_items")
 }
 
 model CheckIn {

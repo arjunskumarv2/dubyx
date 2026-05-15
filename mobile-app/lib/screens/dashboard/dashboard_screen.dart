@@ -122,11 +122,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 4),
                     Text(user?.name ?? '', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 8),
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
                       child: Text(user?.area ?? user?.role ?? '', style: const TextStyle(color: Colors.white, fontSize: 11))),
                   ])),
-                  Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-                    child: Center(child: Text(user?.name?[0].toUpperCase() ?? 'D', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)))),
+                  Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                    child: Center(child: Text(user?.name[0].toUpperCase() ?? 'D', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)))),
                 ]),
               ),
 
@@ -150,20 +150,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
               const SizedBox(height: 12),
 
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.5,
-                children: [
-                  _QuickAction(icon: Iconsax.add_square, label: 'New Order', color: AppTheme.primary, onTap: () => Navigator.pushNamed(context, '/orders/new')),
-                  _QuickAction(icon: Iconsax.people, label: 'Customers', color: const Color(0xFF3B82F6), onTap: () => Navigator.pushNamed(context, '/customers')),
-                  _QuickAction(icon: Iconsax.document_text, label: 'Invoices', color: const Color(0xFF10B981), onTap: () => Navigator.pushNamed(context, '/invoices')),
-                  _QuickAction(icon: Iconsax.money_recive, label: 'Collections', color: AppTheme.gold, onTap: () => Navigator.pushNamed(context, '/collections')),
-                ],
-              ),
+              LayoutBuilder(builder: (ctx, constraints) {
+                final w = constraints.maxWidth;
+                final itemW = (w - 12) / 2;
+                final aspect = itemW / 72;
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: aspect.clamp(1.4, 2.2),
+                  children: [
+                    _QuickAction(icon: Iconsax.add_square, label: 'New Order', color: AppTheme.primary, onTap: () => Navigator.pushNamed(context, '/orders/new')),
+                    _QuickAction(icon: Iconsax.people, label: 'Customers', color: const Color(0xFF3B82F6), onTap: () => Navigator.pushNamed(context, '/customers')),
+                    _QuickAction(icon: Iconsax.document_text, label: 'Invoices', color: const Color(0xFF10B981), onTap: () => Navigator.pushNamed(context, '/invoices')),
+                    _QuickAction(icon: Iconsax.money_recive, label: 'Collections', color: AppTheme.gold, onTap: () => Navigator.pushNamed(context, '/collections')),
+                    _QuickAction(icon: Iconsax.truck, label: 'Van Stock', color: const Color(0xFF8B5CF6), onTap: () => Navigator.pushNamed(context, '/van-stock')),
+                    _QuickAction(icon: Iconsax.box, label: 'Inventory', color: const Color(0xFFEF4444), onTap: () => Navigator.pushNamed(context, '/inventory')),
+                  ],
+                );
+              }),
 
               if (_stats?['lowStockProducts'] != null && _stats!['lowStockProducts'] > 0) ...[
                 const SizedBox(height: 20),

@@ -33,6 +33,8 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   List<Customer> _customers = [];
   List<Product> _products = [];
   List<CartItem> _cart = [];
+  Map<String, int> _vanStock = {};
+  bool _hasVanLoad = false;
   final _notesCtrl = TextEditingController();
   String _searchProduct = '';
   bool _loading = false;
@@ -46,34 +48,53 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
 
   Future<void> _loadData() async {
     try {
-      final [c, p] = await Future.wait([
+      final results = await Future.wait([
         _api.get('/customers'),
         _api.get('/products'),
+        _api.get('/van-loads/my-stock'),
       ]);
+      final vanData = results[2] as Map<String, dynamic>;
+      final Map<String, int> vanStock = {};
+      if (vanData['hasActiveLoad'] == true) {
+        final items = vanData['vanLoad']['items'] as List;
+        for (final item in items) {
+          vanStock[item['productId'] as String] = item['availableQty'] as int;
+        }
+      }
       setState(() {
-        _customers = (c as List).map((e) => Customer.fromJson(e)).toList();
-        _products = (p as List).map((e) => Product.fromJson(e)).toList();
+        _customers = (results[0] as List).map((e) => Customer.fromJson(e)).toList();
+        _products = (results[1] as List).map((e) => Product.fromJson(e)).toList();
+        _hasVanLoad = vanData['hasActiveLoad'] == true;
+        _vanStock = vanStock;
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppTheme.error));
     }
   }
 
-  List<Product> get _filteredProducts => _searchProduct.isEmpty
-    ? _products
-    : _products.where((p) => p.name.toLowerCase().contains(_searchProduct.toLowerCase()) || p.sku.toLowerCase().contains(_searchProduct.toLowerCase())).toList();
+  int _availableQty(Product p) => _hasVanLoad ? (_vanStock[p.id] ?? 0) : p.currentStock;
+
+  List<Product> get _filteredProducts {
+    final list = _hasVanLoad
+      ? _products.where((p) => _vanStock.containsKey(p.id)).toList()
+      : _products;
+    return _searchProduct.isEmpty
+      ? list
+      : list.where((p) => p.name.toLowerCase().contains(_searchProduct.toLowerCase()) || p.sku.toLowerCase().contains(_searchProduct.toLowerCase())).toList();
+  }
 
   double get _subtotal => _cart.fold(0, (s, i) => s + i.product.sellingPrice * i.quantity * (1 - i.discount / 100));
   double get _taxTotal => _cart.fold(0, (s, i) => s + i.product.sellingPrice * i.quantity * (1 - i.discount / 100) * (i.product.taxRate / 100));
   double get _total => _subtotal + _taxTotal;
 
   void _addToCart(Product p) {
+    final maxQty = _availableQty(p);
     final existing = _cart.indexWhere((c) => c.product.id == p.id);
     setState(() {
       if (existing >= 0) {
-        _cart[existing].quantity++;
+        if (_cart[existing].quantity < maxQty) _cart[existing].quantity++;
       } else {
-        _cart.add(CartItem(product: p));
+        if (maxQty > 0) _cart.add(CartItem(product: p));
       }
     });
   }
@@ -82,7 +103,6 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     if (_customer == null || _cart.isEmpty) return;
     setState(() => _loading = true);
     try {
-      final user = context.read<AuthProvider>().user;
       await _api.post('/orders', {
         'customerId': _customer!.id,
         'notes': _notesCtrl.text,
@@ -106,6 +126,8 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final user = context.watch<AuthProvider>().user;
     return Scaffold(
       appBar: AppBar(
         title: Text(_step == 0 ? 'Select Customer' : _step == 1 ? 'Add Products' : 'Review Order'),
@@ -118,15 +140,24 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Row(children: List.generate(3, (i) => Expanded(child: Row(children: [
             Container(width: 24, height: 24, decoration: BoxDecoration(
-              color: i <= _step ? AppTheme.gold : Colors.white.withOpacity(0.3), shape: BoxShape.circle),
+              color: i <= _step ? AppTheme.gold : Colors.white.withValues(alpha: 0.3), shape: BoxShape.circle),
               child: Center(child: Text('${i+1}', style: TextStyle(color: i <= _step ? Colors.white : Colors.white60, fontSize: 11, fontWeight: FontWeight.bold)))),
-            if (i < 2) Expanded(child: Container(height: 2, color: i < _step ? AppTheme.gold : Colors.white.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 4))),
-          ]))),
-        )),
+            if (i < 2) Expanded(child: Container(height: 2, color: i < _step ? AppTheme.gold : Colors.white.withValues(alpha: 0.3), margin: const EdgeInsets.symmetric(horizontal: 4))),
+          ])))),
+        ),
+        if (_hasVanLoad)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: const Color(0xFFFFF7ED),
+            child: Row(children: [
+              const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 6),
+              const Text('Selling from van stock', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFB45309))),
+            ]),
+          ),
 
         Expanded(child: _step == 0 ? _buildCustomerStep() : _step == 1 ? _buildProductStep() : _buildReviewStep()),
 
-        // Bottom action
         Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFF0F0F0)))),
@@ -179,11 +210,16 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       itemBuilder: (ctx, i) {
         final p = _filteredProducts[i];
         final cartQty = _cart.firstWhere((c) => c.product.id == p.id, orElse: () => CartItem(product: p, quantity: 0)).quantity;
+        final availableQty = _availableQty(p);
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            subtitle: Text('${p.sku} • QAR ${p.sellingPrice.toStringAsFixed(2)} • ${p.currentStock} ${p.unit}', style: const TextStyle(fontSize: 11)),
+            subtitle: Text(
+              '${p.sku} • QAR ${p.sellingPrice.toStringAsFixed(2)} • ${_hasVanLoad ? 'Van: $availableQty' : '$availableQty'} ${p.unit}',
+              style: TextStyle(fontSize: 11, color: availableQty == 0 ? AppTheme.error : AppTheme.textGray),
+            ),
+            enabled: availableQty > 0,
             trailing: cartQty > 0
               ? SizedBox(
                   width: 100,
@@ -214,21 +250,23 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                           if (n == null || n < 1) return;
                           setState(() {
                             final idx = _cart.indexWhere((c) => c.product.id == p.id);
-                            if (idx >= 0) _cart[idx].quantity = n;
+                            if (idx >= 0) _cart[idx].quantity = n.clamp(1, availableQty);
                           });
                         },
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => _addToCart(p),
-                      child: Container(width: 26, height: 26, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(6)),
+                      onTap: cartQty < availableQty ? () => _addToCart(p) : null,
+                      child: Container(width: 26, height: 26,
+                        decoration: BoxDecoration(color: cartQty < availableQty ? AppTheme.primary : AppTheme.textGray, borderRadius: BorderRadius.circular(6)),
                         child: const Icon(Icons.add, size: 14, color: Colors.white)),
                     ),
                   ]),
                 )
               : GestureDetector(
-                  onTap: () => _addToCart(p),
-                  child: Container(width: 28, height: 28, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(8)),
+                  onTap: availableQty > 0 ? () => _addToCart(p) : null,
+                  child: Container(width: 28, height: 28,
+                    decoration: BoxDecoration(color: availableQty > 0 ? AppTheme.primary : AppTheme.textGray, borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.add, size: 16, color: Colors.white)),
                 ),
           ),
@@ -238,7 +276,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     if (_cart.isNotEmpty)
       Container(
         padding: const EdgeInsets.all(16),
-        color: AppTheme.primary.withOpacity(0.05),
+        color: AppTheme.primary.withValues(alpha: 0.05),
         child: Text('${_cart.length} products • QAR ${_total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primary)),
       ),
   ]);
@@ -246,7 +284,6 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   Widget _buildReviewStep() => SingleChildScrollView(
     padding: const EdgeInsets.all(16),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Customer
       Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF0F0F0))),
         child: Row(children: [
           Container(width: 40, height: 40, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(10)),
@@ -259,7 +296,6 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         ])),
       const SizedBox(height: 16),
 
-      // Items
       ..._cart.map((item) => Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
@@ -273,7 +309,6 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         ]),
       )),
 
-      // Totals
       const SizedBox(height: 12),
       Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF0F0F0))),
         child: Column(children: [

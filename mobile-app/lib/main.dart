@@ -11,6 +11,7 @@ import 'screens/billing/invoices_screen.dart';
 import 'screens/collections/collections_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/routes/route_screen.dart';
+import 'screens/van/van_stock_screen.dart';
 import 'theme/app_theme.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -41,6 +42,7 @@ class DubYxApp extends StatelessWidget {
           '/invoices': (_) => const InvoicesScreen(),
           '/collections': (_) => const CollectionsScreen(),
           '/inventory': (_) => const InventoryScreen(),
+          '/van-stock': (_) => const VanStockScreen(),
         },
         home: const AuthGate(),
       ),
@@ -83,65 +85,97 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  final _pages = [
-    const DashboardScreen(),
-    const OrdersScreen(),
-    const CustomersScreen(),
-    const RouteScreen(),
-    const InvoicesScreen(),
-    const CollectionsScreen(),
+  final _pages = const [
+    DashboardScreen(),
+    OrdersScreen(),
+    CustomersScreen(),
+    InvoicesScreen(),
+    CollectionsScreen(),
+    RouteScreen(),
+  ];
+
+  static const _navItems = [
+    _NavDef(icon: Iconsax.home, label: 'Home'),
+    _NavDef(icon: Iconsax.shopping_cart, label: 'Orders'),
+    _NavDef(icon: Iconsax.people, label: 'Customers'),
+    _NavDef(icon: Iconsax.document_text, label: 'Invoices'),
+    _NavDef(icon: Iconsax.money_recive, label: 'Collect'),
+    _NavDef(icon: Icons.route_outlined, label: 'Routes'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-              _NavItem(icon: Iconsax.home, label: 'Home', index: 0, current: _index, onTap: () => setState(() => _index = 0)),
-              _NavItem(icon: Iconsax.shopping_cart, label: 'Orders', index: 1, current: _index, onTap: () => setState(() => _index = 1)),
-              _NavItem(icon: Iconsax.people, label: 'Customers', index: 2, current: _index, onTap: () => setState(() => _index = 2)),
-              _NavItem(icon: Icons.route_outlined, label: 'Routes', index: 3, current: _index, onTap: () => setState(() => _index = 3)),
-              _NavItem(icon: Iconsax.document_text, label: 'Invoices', index: 4, current: _index, onTap: () => setState(() => _index = 4)),
-              _NavItem(icon: Iconsax.money_recive, label: 'Collect', index: 5, current: _index, onTap: () => setState(() => _index = 5)),
-            ]),
-          ),
-        ),
+      bottomNavigationBar: _BottomNav(
+        current: _index,
+        items: _navItems,
+        onTap: (i) => setState(() => _index = i),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavDef {
   final IconData icon;
   final String label;
-  final int index;
-  final int current;
-  final VoidCallback onTap;
+  const _NavDef({required this.icon, required this.label});
+}
 
-  const _NavItem({required this.icon, required this.label, required this.index, required this.current, required this.onTap});
+class _BottomNav extends StatelessWidget {
+  final int current;
+  final List<_NavDef> items;
+  final ValueChanged<int> onTap;
+
+  const _BottomNav({required this.current, required this.items, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final active = index == current;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: active ? BoxDecoration(color: AppTheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)) : null,
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: active ? AppTheme.primary : const Color(0xFF9CA3AF), size: 22),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: active ? FontWeight.w700 : FontWeight.normal, color: active ? AppTheme.primary : const Color(0xFF9CA3AF))),
-        ]),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, -3))],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final active = i == current;
+              final item = items[i];
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(i),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: active
+                          ? BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20))
+                          : null,
+                        child: Icon(item.icon, size: 20, color: active ? AppTheme.primary : const Color(0xFF9CA3AF)),
+                      ),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                          color: active ? AppTheme.primary : const Color(0xFF9CA3AF),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }

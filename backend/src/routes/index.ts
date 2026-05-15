@@ -15,6 +15,7 @@ import * as gpsCtrl from '../controllers/gps.controller';
 import * as reportCtrl from '../controllers/report.controller';
 import * as settingsCtrl from '../controllers/settings.controller';
 import * as routeCtrl from '../controllers/route.controller';
+import * as vanCtrl from '../controllers/van.controller';
 
 const router = Router();
 
@@ -103,6 +104,13 @@ router.put('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), rou
 router.delete('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.deleteRoute);
 router.post('/checkins', authenticate, routeCtrl.uploadSelfie.single('selfie'), routeCtrl.checkIn);
 router.get('/checkins', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.getCheckIns);
+
+// Van Loads
+router.get('/van-loads', authenticate, vanCtrl.getVanLoads);
+router.get('/van-loads/my-stock', authenticate, vanCtrl.getMyVanStock);
+router.get('/van-loads/:id', authenticate, vanCtrl.getVanLoad);
+router.post('/van-loads', authenticate, authorize(...adminRoles, 'MANAGER'), vanCtrl.createVanLoad);
+router.post('/van-loads/:id/return', authenticate, authorize(...adminRoles, 'MANAGER'), vanCtrl.processReturn);
 
 // Settings
 router.get('/settings', authenticate, settingsCtrl.getSettings);
