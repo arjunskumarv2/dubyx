@@ -51,6 +51,7 @@ export default function VanManagement() {
   const [loadVehicle, setLoadVehicle] = useState<Vehicle | null>(null);
   const [assignVehicle, setAssignVehicle] = useState<Vehicle | null>(null);
   const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
+  const [editLoad, setEditLoad] = useState<VanLoad | null>(null);
 
   const { data: vehicles = [], isLoading: vLoading } = useQuery<Vehicle[]>({
     queryKey: ['vehicles'],
@@ -168,6 +169,7 @@ export default function VanManagement() {
                   load={load}
                   expanded={expandedLoadId === load.id}
                   onToggle={() => setExpandedLoadId(expandedLoadId === load.id ? null : load.id)}
+                  onEdit={() => setEditLoad(load)}
                   onReturnSuccess={() => { qc.invalidateQueries({ queryKey: ['van-loads'] }); qc.invalidateQueries({ queryKey: ['vehicles'] }); qc.invalidateQueries({ queryKey: ['products-active'] }); }}
                 />
               ))}
@@ -259,6 +261,14 @@ export default function VanManagement() {
           staff={staff}
           onClose={() => setAssignVehicle(null)}
           onSuccess={() => { setAssignVehicle(null); qc.invalidateQueries({ queryKey: ['vehicles'] }); }}
+        />
+      )}
+      {editLoad && (
+        <EditLoadModal
+          load={editLoad}
+          products={products}
+          onClose={() => setEditLoad(null)}
+          onSuccess={() => { setEditLoad(null); qc.invalidateQueries({ queryKey: ['van-loads'] }); qc.invalidateQueries({ queryKey: ['vehicles'] }); qc.invalidateQueries({ queryKey: ['products-active'] }); }}
         />
       )}
       {loadVehicle && (
@@ -396,8 +406,8 @@ function VehicleCard({ vehicle, onEdit, onAssign, onLoad, onDeleteSuccess }: {
 }
 
 /* ─── Load Card (history) ─── */
-function LoadCard({ load, expanded, onToggle, onReturnSuccess }: {
-  load: VanLoad; expanded: boolean; onToggle: () => void; onReturnSuccess: () => void;
+function LoadCard({ load, expanded, onToggle, onEdit, onReturnSuccess }: {
+  load: VanLoad; expanded: boolean; onToggle: () => void; onEdit: () => void; onReturnSuccess: () => void;
 }) {
   const [processing, setProcessing] = useState(false);
   const [returnQtys, setReturnQtys] = useState<Record<string, number>>({});
@@ -441,6 +451,15 @@ function LoadCard({ load, expanded, onToggle, onReturnSuccess }: {
           <div><p className="text-xs text-gray-400">Sold</p><p className="font-semibold text-green-600">{totalSold}</p></div>
           <div><p className="text-xs text-gray-400">Remaining</p><p className="font-semibold text-blue-600">{totalAvail}</p></div>
         </div>
+        {load.status === 'ACTIVE' && (
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(); }}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Add stock to this load"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
         {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </div>
       {expanded && (
@@ -711,6 +730,140 @@ function LoadStockModal({ vehicle, products, onClose, onSuccess }: {
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#8D1B3D] text-white rounded-lg text-sm font-medium hover:bg-[#7a1735] disabled:opacity-50">
             <Check size={16} />
             {submitting ? 'Loading...' : 'Create Van Load'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Edit Load Modal (top-up existing stock) ─── */
+function EditLoadModal({ load, products, onClose, onSuccess }: {
+  load: VanLoad; products: Product[]; onClose: () => void; onSuccess: () => void;
+}) {
+  const [addItems, setAddItems] = useState<{ productId: string; quantity: number }[]>([]);
+  const [search, setSearch] = useState('');
+  const [notes, setNotes] = useState(load.notes || '');
+  const [saving, setSaving] = useState(false);
+
+  const filteredProducts = products.filter(p =>
+    p.currentStock > 0 &&
+    !addItems.find(i => i.productId === p.id) &&
+    (p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const addItem = (p: Product) => { setAddItems(prev => [...prev, { productId: p.id, quantity: 1 }]); setSearch(''); };
+  const removeItem = (id: string) => setAddItems(prev => prev.filter(i => i.productId !== id));
+  const updateQty = (id: string, qty: number) => setAddItems(prev => prev.map(i => i.productId === id ? { ...i, quantity: qty } : i));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put(`/van-loads/${load.id}`, { notes, addItems });
+      onSuccess();
+      toast.success('Load updated!');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update load');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Add Stock — {load.loadNumber}</h2>
+            <p className="text-sm text-gray-400 mt-0.5">{load.vehicle?.vehicleNumber} · {load.salesman.name}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Current items summary */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Current Stock in Van</p>
+            <div className="space-y-1.5">
+              {load.items.map(item => {
+                const avail = item.loadedQty - item.soldQty - item.returnedQty;
+                return (
+                  <div key={item.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                    <span className="font-medium text-gray-800">{item.product.name}</span>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span>Loaded: {item.loadedQty}</span>
+                      <span>Sold: {item.soldQty}</span>
+                      <span className="font-semibold text-[#8D1B3D]">Available: {avail} {item.product.unit}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Search to add/top-up */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Add / Top-up Products</label>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name or SKU..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8D1B3D] focus:border-transparent" />
+            {search && filteredProducts.length > 0 && (
+              <div className="mt-1 border border-gray-200 rounded-lg divide-y max-h-48 overflow-y-auto shadow-sm">
+                {filteredProducts.slice(0, 10).map(p => {
+                  const inLoad = load.items.find(i => i.productId === p.id);
+                  return (
+                    <button key={p.id} onClick={() => addItem(p)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 text-left">
+                      <div>
+                        <span className="font-medium text-gray-900">{p.name}</span>
+                        {inLoad && <span className="ml-2 text-xs text-blue-500">(top-up · {inLoad.loadedQty - inLoad.soldQty - inLoad.returnedQty} left)</span>}
+                      </div>
+                      <span className="text-gray-400 text-xs">Warehouse: {p.currentStock} {p.unit}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {addItems.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">Adding ({addItems.length})</p>
+              {addItems.map(item => {
+                const p = products.find(pr => pr.id === item.productId)!;
+                const inLoad = load.items.find(i => i.productId === item.productId);
+                return (
+                  <div key={item.productId} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {inLoad ? `${inLoad.loadedQty - inLoad.soldQty - inLoad.returnedQty} left in van · ` : ''}
+                        Warehouse: {p.currentStock} {p.unit}
+                      </p>
+                    </div>
+                    <input type="number" min={1} max={p.currentStock} value={item.quantity}
+                      onChange={e => updateQty(item.productId, Math.min(parseInt(e.target.value) || 1, p.currentStock))}
+                      className="w-20 border border-gray-200 rounded px-2 py-1 text-center text-sm" />
+                    <button onClick={() => removeItem(item.productId)} className="text-red-400 hover:text-red-600"><X size={16} /></button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8D1B3D] focus:border-transparent resize-none" />
+          </div>
+        </div>
+
+        <div className="flex gap-3 p-6 border-t">
+          <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+          <button onClick={handleSave} disabled={saving || (addItems.length === 0 && notes === (load.notes || ''))}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#8D1B3D] text-white rounded-lg text-sm font-medium hover:bg-[#7a1735] disabled:opacity-50">
+            <Check size={16} />
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

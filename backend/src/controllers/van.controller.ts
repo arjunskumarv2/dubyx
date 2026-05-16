@@ -197,12 +197,10 @@ export const updateVanLoad = async (req: AuthRequest, res: Response) => {
   if (!vanLoad) return res.status(404).json({ message: 'Van load not found' });
   if (vanLoad.status !== 'ACTIVE') return res.status(400).json({ message: 'Can only edit active van loads' });
 
-  const newItems: { productId: string; quantity: number }[] = addItems || [];
+  const addItems2: { productId: string; quantity: number }[] = addItems || [];
 
-  // Validate stock for new items
-  for (const item of newItems) {
-    const existing = vanLoad.items.find(i => i.productId === item.productId);
-    if (existing) return res.status(400).json({ message: 'Product already in this van load. Use return to adjust.' });
+  // Validate stock availability for all additions (both top-ups and new products)
+  for (const item of addItems2) {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) return res.status(404).json({ message: `Product not found: ${item.productId}` });
     if (product.currentStock < item.quantity) {
@@ -213,7 +211,9 @@ export const updateVanLoad = async (req: AuthRequest, res: Response) => {
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    for (const item of newItems) {
+    for (const item of addItems2) {
+      const existing = vanLoad.items.find(i => i.productId === item.productId);
+
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: item.quantity } },
@@ -223,13 +223,23 @@ export const updateVanLoad = async (req: AuthRequest, res: Response) => {
           productId: item.productId,
           type: 'OUT',
           quantity: item.quantity,
-          reason: `Van load ${vanLoad.loadNumber} — added to van`,
+          reason: `Van load ${vanLoad.loadNumber} — ${existing ? 'topped up in' : 'added to'} van`,
           reference: vanLoad.loadNumber,
         },
       });
-      await tx.vanLoadItem.create({
-        data: { vanLoadId: id, productId: item.productId, loadedQty: item.quantity },
-      });
+
+      if (existing) {
+        // Top up existing van load item
+        await tx.vanLoadItem.update({
+          where: { id: existing.id },
+          data: { loadedQty: { increment: item.quantity } },
+        });
+      } else {
+        // Brand new product for this load
+        await tx.vanLoadItem.create({
+          data: { vanLoadId: id, productId: item.productId, loadedQty: item.quantity },
+        });
+      }
     }
 
     return tx.vanLoad.update({
