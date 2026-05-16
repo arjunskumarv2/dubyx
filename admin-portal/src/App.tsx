@@ -14,6 +14,7 @@ import Users from './pages/Users';
 import Settings from './pages/Settings';
 import RouteManagement from './pages/RouteManagement';
 import VanManagement from './pages/VanManagement';
+import Attendance from './pages/Attendance';
 
 const ProtectedRoute = ({ children, roles }: { children: JSX.Element; roles?: string[] }) => {
   const { user, isLoading } = useAuth();
@@ -39,6 +40,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><Reports /></ProtectedRoute>} />
         <Route path="routes" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><RouteManagement /></ProtectedRoute>} />
         <Route path="vans" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><VanManagement /></ProtectedRoute>} />
+        <Route path="attendance" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><Attendance /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><Users /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><Settings /></ProtectedRoute>} />
       </Route>

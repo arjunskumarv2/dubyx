@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Phone, MapPin, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Search, Plus, Phone, MapPin, CreditCard, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -14,9 +14,11 @@ export default function Customers() {
   const [form, setForm] = useState(defaultForm);
   const [selected, setSelected] = useState<any>(null);
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, refetch } = useQuery({
     queryKey: ['customers', search, area],
     queryFn: () => api.get('/customers', { params: { search, area } }).then(r => r.data),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: detail } = useQuery({
@@ -47,9 +49,14 @@ export default function Customers() {
           </div>
           <input value={area} onChange={e => setArea(e.target.value)} placeholder="Filter by area" className="input w-40" />
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 whitespace-nowrap">
-          <Plus size={16} /> Add Customer
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => refetch()} className="btn-secondary flex items-center gap-2 whitespace-nowrap">
+            <RefreshCw size={14} /> Refresh
+          </button>
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 whitespace-nowrap">
+            <Plus size={16} /> Add Customer
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
