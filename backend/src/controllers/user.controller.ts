@@ -96,3 +96,10 @@ export const getSalesmanStats = async (req: Request, res: Response) => {
     todayCollections: todayCollections._sum.amount || 0,
   });
 };
+
+export const saveFcmToken = async (req: AuthRequest, res: Response) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ message: 'Token required' });
+  await prisma.user.update({ where: { id: req.user!.id }, data: { fcmToken: token } });
+  res.json({ success: true });
+};

@@ -16,6 +16,8 @@ import * as reportCtrl from '../controllers/report.controller';
 import * as settingsCtrl from '../controllers/settings.controller';
 import * as routeCtrl from '../controllers/route.controller';
 import * as vanCtrl from '../controllers/van.controller';
+import * as vehicleCtrl from '../controllers/vehicle.controller';
+import * as stockRequestCtrl from '../controllers/stockRequest.controller';
 import * as attendanceCtrl from '../controllers/attendance.controller';
 
 const router = Router();
@@ -40,6 +42,7 @@ router.put('/users/:id', authenticate, authorize(...adminRoles), userCtrl.update
 router.delete('/users/:id', authenticate, authorize('SUPER_ADMIN'), userCtrl.deleteUser);
 router.post('/users/:id/reset-password', authenticate, authorize(...adminRoles), userCtrl.resetPassword);
 router.get('/users/:id/stats', authenticate, userCtrl.getSalesmanStats);
+router.post('/users/fcm-token', authenticate, userCtrl.saveFcmToken);
 
 // Customers
 router.get('/customers', authenticate, customerCtrl.getCustomers);
@@ -112,12 +115,26 @@ router.delete('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), 
 router.post('/checkins', authenticate, routeCtrl.uploadSelfie.single('selfie'), routeCtrl.checkIn);
 router.get('/checkins', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.getCheckIns);
 
+// Vehicles
+router.get('/vehicles', authenticate, vehicleCtrl.getVehicles);
+router.post('/vehicles', authenticate, authorize(...adminRoles, 'MANAGER'), vehicleCtrl.createVehicle);
+router.put('/vehicles/:id', authenticate, authorize(...adminRoles, 'MANAGER'), vehicleCtrl.updateVehicle);
+router.post('/vehicles/:id/assign', authenticate, authorize(...adminRoles, 'MANAGER'), vehicleCtrl.assignVehicle);
+router.delete('/vehicles/:id', authenticate, authorize(...adminRoles, 'MANAGER'), vehicleCtrl.deleteVehicle);
+
 // Van Loads
 router.get('/van-loads', authenticate, vanCtrl.getVanLoads);
 router.get('/van-loads/my-stock', authenticate, vanCtrl.getMyVanStock);
 router.get('/van-loads/:id', authenticate, vanCtrl.getVanLoad);
 router.post('/van-loads', authenticate, authorize(...adminRoles, 'MANAGER'), vanCtrl.createVanLoad);
+router.put('/van-loads/:id', authenticate, authorize(...adminRoles, 'MANAGER'), vanCtrl.updateVanLoad);
 router.post('/van-loads/:id/return', authenticate, authorize(...adminRoles, 'MANAGER'), vanCtrl.processReturn);
+
+// Stock Requests
+router.get('/stock-requests', authenticate, stockRequestCtrl.getStockRequests);
+router.post('/stock-requests', authenticate, stockRequestCtrl.createStockRequest);
+router.post('/stock-requests/:id/accept', authenticate, authorize(...adminRoles, 'MANAGER'), stockRequestCtrl.acceptStockRequest);
+router.post('/stock-requests/:id/reject', authenticate, authorize(...adminRoles, 'MANAGER'), stockRequestCtrl.rejectStockRequest);
 
 // Settings
 router.get('/settings', authenticate, settingsCtrl.getSettings);

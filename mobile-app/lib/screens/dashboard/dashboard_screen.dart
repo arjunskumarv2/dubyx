@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [AppTheme.primary, Color(0xFFB22351)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: AppTheme.primary.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: [BoxShadow(color: AppTheme.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -174,18 +174,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               if (_stats?['lowStockProducts'] != null && _stats!['lowStockProducts'] > 0) ...[
                 const SizedBox(height: 20),
-                AppCard(
-                  color: const Color(0xFFFFF7ED),
-                  child: Row(children: [
-                    Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(10)),
-                      child: const Icon(Iconsax.warning_2, color: Colors.white, size: 20)),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Low Stock Alert', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                      Text('${_stats!['lowStockProducts']} products need restocking', style: const TextStyle(fontSize: 12, color: AppTheme.textGray)),
-                    ])),
-                    const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.textGray),
-                  ]),
+                GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/stock-request'),
+                  child: AppCard(
+                    color: const Color(0xFFFFF7ED),
+                    child: Row(children: [
+                      Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Iconsax.warning_2, color: Colors.white, size: 20)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Low Stock Alert', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text('${_stats!['lowStockProducts']} products need restocking — tap to request', style: const TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                      ])),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.textGray),
+                    ]),
+                  ),
                 ),
               ],
             ]),
@@ -213,7 +216,7 @@ class _QuickAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,

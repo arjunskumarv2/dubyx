@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import '../services/gps_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -29,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _user = await _auth.login(email, password);
       _startGps();
+      _registerFcmToken();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -38,6 +41,17 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<void> _registerFcmToken() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final token = await messaging.getToken();
+      if (token != null) {
+        await ApiService().post('/users/fcm-token', {'token': token});
+      }
+    } catch (_) {}
   }
 
   Future<void> logout() async {

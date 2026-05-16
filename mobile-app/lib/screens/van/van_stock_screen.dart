@@ -38,6 +38,13 @@ class _VanStockScreenState extends State<VanStockScreen> {
       appBar: AppBar(
         title: const Text('My Van Stock'),
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/stock-request'),
+            icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 18),
+            label: const Text('Request', style: TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         color: AppTheme.primary,

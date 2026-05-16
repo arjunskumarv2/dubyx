@@ -1,6 +1,30 @@
 import { Request, Response } from 'express';
+import https from 'https';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth';
+
+export const sendFcmNotification = (token: string, title: string, body: string, data?: Record<string, string>) => {
+  const serverKey = process.env.FCM_SERVER_KEY;
+  if (!serverKey || !token) return;
+
+  const payload = JSON.stringify({
+    to: token,
+    notification: { title, body, sound: 'default' },
+    data: data || {},
+  });
+
+  const req = https.request({
+    hostname: 'fcm.googleapis.com',
+    path: '/fcm/send',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `key=${serverKey}`,
+    },
+  });
+  req.write(payload);
+  req.end();
+};
 
 const generateLoadNumber = async (): Promise<string> => {
   const count = await prisma.vanLoad.count();
@@ -8,22 +32,34 @@ const generateLoadNumber = async (): Promise<string> => {
 };
 
 export const createVanLoad = async (req: AuthRequest, res: Response) => {
-  const { salesmanId, items, notes } = req.body;
+  const { vehicleId, items, notes } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ message: 'Van load must have at least one item' });
   }
+  if (!vehicleId) {
+    return res.status(400).json({ message: 'Vehicle is required' });
+  }
 
-  const salesman = await prisma.user.findUnique({ where: { id: salesmanId } });
-  if (!salesman) return res.status(404).json({ message: 'Salesman not found' });
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    include: { assignedTo: true },
+  });
+  if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+  if (!vehicle.assignedToId || !vehicle.assignedTo) {
+    return res.status(400).json({ message: `Vehicle ${vehicle.vehicleNumber} has no assigned staff. Assign a staff member first.` });
+  }
 
-  // Check for existing active load for this salesman
+  const salesman = vehicle.assignedTo;
+  const salesmanId = salesman.id;
+
+  // Check for existing active load for this vehicle
   const activeLoad = await prisma.vanLoad.findFirst({
-    where: { salesmanId, status: 'ACTIVE' },
+    where: { vehicleId, status: 'ACTIVE' },
   });
   if (activeLoad) {
     return res.status(400).json({
-      message: `Salesman already has an active van load (${activeLoad.loadNumber}). Close or return it first.`,
+      message: `Vehicle ${vehicle.vehicleNumber} already has an active load (${activeLoad.loadNumber}). Return it first.`,
     });
   }
 
@@ -62,6 +98,7 @@ export const createVanLoad = async (req: AuthRequest, res: Response) => {
     return tx.vanLoad.create({
       data: {
         loadNumber,
+        vehicleId,
         salesmanId,
         notes,
         items: {
@@ -72,11 +109,23 @@ export const createVanLoad = async (req: AuthRequest, res: Response) => {
         },
       },
       include: {
+        vehicle: { select: { id: true, vehicleNumber: true, make: true, model: true } },
         salesman: { select: { id: true, name: true, area: true } },
         items: { include: { product: { select: { id: true, name: true, sku: true, unit: true, sellingPrice: true } } } },
       },
     });
   });
+
+  // Send push notification to salesman
+  if (salesman.fcmToken) {
+    const itemCount = (items as { productId: string; quantity: number }[]).length;
+    sendFcmNotification(
+      salesman.fcmToken,
+      'New Van Load Assigned',
+      `Van load ${loadNumber} with ${itemCount} product(s) has been assigned to you.`,
+      { type: 'van_load', loadNumber, vanLoadId: vanLoad.id },
+    );
+  }
 
   res.status(201).json(vanLoad);
 };
@@ -92,6 +141,7 @@ export const getVanLoads = async (req: AuthRequest, res: Response) => {
       ...(status ? { status: status as any } : {}),
     },
     include: {
+      vehicle: { select: { id: true, vehicleNumber: true, make: true, model: true, color: true } },
       salesman: { select: { id: true, name: true, area: true } },
       items: { include: { product: { select: { id: true, name: true, sku: true, unit: true } } } },
     },
@@ -133,6 +183,66 @@ export const getMyVanStock = async (req: AuthRequest, res: Response) => {
   }));
 
   res.json({ hasActiveLoad: true, vanLoad: { ...activeLoad, items: stockItems } });
+};
+
+export const updateVanLoad = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { notes, addItems } = req.body;
+
+  const vanLoad = await prisma.vanLoad.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+
+  if (!vanLoad) return res.status(404).json({ message: 'Van load not found' });
+  if (vanLoad.status !== 'ACTIVE') return res.status(400).json({ message: 'Can only edit active van loads' });
+
+  const newItems: { productId: string; quantity: number }[] = addItems || [];
+
+  // Validate stock for new items
+  for (const item of newItems) {
+    const existing = vanLoad.items.find(i => i.productId === item.productId);
+    if (existing) return res.status(400).json({ message: 'Product already in this van load. Use return to adjust.' });
+    const product = await prisma.product.findUnique({ where: { id: item.productId } });
+    if (!product) return res.status(404).json({ message: `Product not found: ${item.productId}` });
+    if (product.currentStock < item.quantity) {
+      return res.status(400).json({
+        message: `Insufficient stock for "${product.name}". Available: ${product.currentStock}, Requested: ${item.quantity}`,
+      });
+    }
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    for (const item of newItems) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: item.quantity } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: 'OUT',
+          quantity: item.quantity,
+          reason: `Van load ${vanLoad.loadNumber} — added to van`,
+          reference: vanLoad.loadNumber,
+        },
+      });
+      await tx.vanLoadItem.create({
+        data: { vanLoadId: id, productId: item.productId, loadedQty: item.quantity },
+      });
+    }
+
+    return tx.vanLoad.update({
+      where: { id },
+      data: { notes: notes !== undefined ? notes : vanLoad.notes },
+      include: {
+        salesman: { select: { id: true, name: true, area: true } },
+        items: { include: { product: { select: { id: true, name: true, sku: true, unit: true, sellingPrice: true } } } },
+      },
+    });
+  });
+
+  res.json(updated);
 };
 
 export const processReturn = async (req: AuthRequest, res: Response) => {

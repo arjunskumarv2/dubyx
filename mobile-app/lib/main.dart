@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
@@ -12,6 +13,7 @@ import 'screens/collections/collections_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/routes/route_screen.dart';
 import 'screens/van/van_stock_screen.dart';
+import 'screens/van/stock_request_screen.dart';
 import 'theme/app_theme.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -21,6 +23,9 @@ void main() async {
     statusBarColor: AppTheme.primary,
     statusBarIconBrightness: Brightness.light,
   ));
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
   runApp(const DubYxApp());
 }
 
@@ -43,6 +48,7 @@ class DubYxApp extends StatelessWidget {
           '/collections': (_) => const CollectionsScreen(),
           '/inventory': (_) => const InventoryScreen(),
           '/van-stock': (_) => const VanStockScreen(),
+          '/stock-request': (_) => const StockRequestScreen(),
         },
         home: const AuthGate(),
       ),

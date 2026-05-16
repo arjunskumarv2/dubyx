@@ -50,6 +50,12 @@ enum VanLoadStatus {
   CLOSED
 }
 
+enum StockRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id          String   @id @default(uuid())
   name        String
@@ -60,17 +66,20 @@ model User {
   isActive    Boolean  @default(true)
   avatar      String?
   area        String?
+  fcmToken    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orders      Order[]
-  gpsLogs     GpsLog[]
-  collections Collection[]
-  invoices    Invoice[]
-  routes      Route[]
-  checkIns    CheckIn[]
-  vanLoads    VanLoad[]
-  attendance  Attendance[]
+  orders           Order[]
+  gpsLogs          GpsLog[]
+  collections      Collection[]
+  invoices         Invoice[]
+  routes           Route[]
+  checkIns         CheckIn[]
+  vanLoads         VanLoad[]
+  attendance       Attendance[]
+  stockRequests    StockRequest[]
+  assignedVehicles Vehicle[]
 
   @@map("users")
 }
@@ -136,9 +145,10 @@ model Product {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  orderItems     OrderItem[]
-  stockMovements StockMovement[]
-  vanLoadItems   VanLoadItem[]
+  orderItems        OrderItem[]
+  stockMovements    StockMovement[]
+  vanLoadItems      VanLoadItem[]
+  stockRequestItems StockRequestItem[]
 
   @@map("products")
 }
@@ -283,9 +293,30 @@ model RouteStop {
   @@map("route_stops")
 }
 
+model Vehicle {
+  id             String    @id @default(uuid())
+  vehicleNumber  String    @unique
+  make           String?
+  model          String?
+  color          String?
+  notes          String?
+  isActive       Boolean   @default(true)
+  assignedToId   String?
+  assignedTo     User?     @relation(fields: [assignedToId], references: [id])
+  assignedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vanLoads       VanLoad[]
+
+  @@map("vehicles")
+}
+
 model VanLoad {
   id          String        @id @default(uuid())
   loadNumber  String        @unique
+  vehicleId   String?
+  vehicle     Vehicle?      @relation(fields: [vehicleId], references: [id])
   salesmanId  String
   salesman    User          @relation(fields: [salesmanId], references: [id])
   status      VanLoadStatus @default(ACTIVE)
@@ -342,4 +373,30 @@ model Attendance {
   totalMinutes      Int?
 
   @@map("attendance")
+}
+
+model StockRequest {
+  id              String             @id @default(uuid())
+  requestNumber   String             @unique
+  requestedById   String
+  requestedBy     User               @relation(fields: [requestedById], references: [id])
+  status          StockRequestStatus @default(PENDING)
+  notes           String?
+  vanLoadId       String?
+  items           StockRequestItem[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@map("stock_requests")
+}
+
+model StockRequestItem {
+  id             String       @id @default(uuid())
+  stockRequestId String
+  stockRequest   StockRequest @relation(fields: [stockRequestId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  requestedQty   Int
+
+  @@map("stock_request_items")
 }
