@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:iconsax/iconsax.dart';
 import '../../models/customer.dart';
 import '../../models/product.dart';
 import '../../providers/auth_provider.dart';
@@ -103,7 +106,8 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     if (_customer == null || _cart.isEmpty) return;
     setState(() => _loading = true);
     try {
-      await _api.post('/orders', {
+      // 1. Create order
+      final order = await _api.post('/orders', {
         'customerId': _customer!.id,
         'notes': _notesCtrl.text,
         'items': _cart.map((c) => {
@@ -112,15 +116,194 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           'discount': c.discount,
         }).toList(),
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order placed successfully!'), backgroundColor: AppTheme.success));
-        Navigator.pop(context, true);
-      }
+
+      // 2. Auto-generate cash invoice
+      final inv = await _api.post('/invoices/generate', {'orderId': order['id']});
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+
+      // 3. Show collect payment sheet immediately
+      _showCashInvoiceSheet(
+        invoiceId: inv['id'],
+        invoiceNumber: inv['invoiceNumber'],
+        customerName: _customer!.shopName,
+        total: (inv['total'] as num).toDouble(),
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppTheme.error));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.error));
         setState(() => _loading = false);
       }
+    }
+  }
+
+  void _showCashInvoiceSheet({
+    required String invoiceId,
+    required String invoiceNumber,
+    required String customerName,
+    required double total,
+  }) {
+    final fmt = NumberFormat('#,##0.00');
+    final amountCtrl = TextEditingController(text: total.toStringAsFixed(2));
+    final refCtrl = TextEditingController();
+    String method = 'CASH';
+    bool collecting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Header with invoice badge
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+                  child: Row(children: [
+                    Container(width: 44, height: 44, decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.receipt_long, color: Colors.white, size: 22)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Invoice Generated!', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppTheme.success)),
+                      Text(invoiceNumber, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppTheme.textGray)),
+                      Text(customerName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    ])),
+                    IconButton(icon: const Icon(Icons.close, color: AppTheme.textGray), onPressed: () => Navigator.pop(ctx)),
+                  ]),
+                ),
+                const SizedBox(height: 20),
+
+                const Text('Collect Payment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text('Total: QAR ${fmt.format(total)}', style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
+                const SizedBox(height: 16),
+
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  decoration: InputDecoration(
+                    prefixText: 'QAR ',
+                    filled: true, fillColor: AppTheme.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(children: [
+                  for (final e in [('Full', total), ('75%', total * .75), ('50%', total * .5), ('25%', total * .25)])
+                    Expanded(child: GestureDetector(
+                      onTap: () => amountCtrl.text = e.$2.toStringAsFixed(2),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(8)),
+                        child: Text(e.$1, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w600)),
+                      ),
+                    )),
+                ]),
+                const SizedBox(height: 20),
+
+                const Text('Payment Method', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textGray)),
+                const SizedBox(height: 8),
+                Row(children: [
+                  for (final m in ['CASH', 'BANK_TRANSFER', 'CHEQUE', 'CREDIT_CARD'])
+                    Expanded(child: Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: () => setModal(() => method = m),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(color: method == m ? AppTheme.primary : AppTheme.background, borderRadius: BorderRadius.circular(10)),
+                          child: Column(children: [
+                            Icon(_methodIcon(m), size: 18, color: method == m ? Colors.white : AppTheme.textGray),
+                            const SizedBox(height: 4),
+                            Text(_methodLabel(m), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: method == m ? Colors.white : AppTheme.textGray), textAlign: TextAlign.center),
+                          ]),
+                        ),
+                      ),
+                    )),
+                ]),
+
+                if (method != 'CASH') ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: refCtrl,
+                    decoration: InputDecoration(
+                      hintText: method == 'CHEQUE' ? 'Cheque number' : 'Transaction reference',
+                      labelText: 'Reference / Cheque No.',
+                      filled: true, fillColor: AppTheme.background,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+
+                Row(children: [
+                  Expanded(child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                    child: const Text('Pay Later'),
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(flex: 2, child: ElevatedButton.icon(
+                    onPressed: collecting ? null : () async {
+                      final amt = double.tryParse(amountCtrl.text);
+                      if (amt == null || amt <= 0) return;
+                      setModal(() => collecting = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await _api.post('/invoices/$invoiceId/payment', {
+                          'amount': amt, 'method': method,
+                          if (refCtrl.text.isNotEmpty) 'reference': refCtrl.text,
+                        });
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        messenger.showSnackBar(SnackBar(content: Text('QAR ${fmt.format(amt)} collected!'), backgroundColor: AppTheme.success));
+                      } catch (e) {
+                        setModal(() => collecting = false);
+                        messenger.showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.error));
+                      }
+                    },
+                    icon: collecting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Iconsax.money_send, size: 18),
+                    label: Text(collecting ? 'Processing...' : 'Collect Now'),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  )),
+                ]),
+                const SizedBox(height: 8),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _methodIcon(String m) {
+    switch (m) {
+      case 'CASH': return Iconsax.money;
+      case 'BANK_TRANSFER': return Iconsax.bank;
+      case 'CHEQUE': return Iconsax.document_text;
+      default: return Iconsax.card;
+    }
+  }
+
+  String _methodLabel(String m) {
+    switch (m) {
+      case 'CASH': return 'Cash';
+      case 'BANK_TRANSFER': return 'Bank';
+      case 'CHEQUE': return 'Cheque';
+      default: return 'Card';
     }
   }
 

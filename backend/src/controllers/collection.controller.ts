@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth';
 
@@ -31,7 +31,7 @@ export const getPendingCollections = async (req: AuthRequest, res: Response) => 
   const invoices = await prisma.invoice.findMany({
     where: {
       paymentStatus: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
-      ...(isSalesman ? { generatedById: req.user!.id } : {}),
+      ...(isSalesman ? { order: { salesmanId: req.user!.id } } : {}),
     },
     include: {
       customer: { select: { id: true, shopName: true, ownerName: true, phone: true, area: true } },

@@ -26,6 +26,26 @@ class OrderItem {
   );
 }
 
+class OrderInvoice {
+  final String id;
+  final String invoiceNumber;
+  final String paymentStatus;
+  final double total;
+  final double paidAmount;
+
+  OrderInvoice({required this.id, required this.invoiceNumber, required this.paymentStatus, required this.total, required this.paidAmount});
+
+  factory OrderInvoice.fromJson(Map<String, dynamic> j) => OrderInvoice(
+    id: j['id'], invoiceNumber: j['invoiceNumber'],
+    paymentStatus: j['paymentStatus'] ?? 'PENDING',
+    total: (j['total'] as num?)?.toDouble() ?? 0,
+    paidAmount: (j['paidAmount'] as num?)?.toDouble() ?? 0,
+  );
+
+  double get balance => total - paidAmount;
+  bool get isPaid => paymentStatus == 'PAID';
+}
+
 class Order {
   final String id;
   final String orderNumber;
@@ -42,6 +62,7 @@ class Order {
   final String? notes;
   final List<OrderItem> items;
   final DateTime createdAt;
+  final OrderInvoice? invoice;
 
   Order({
     required this.id, required this.orderNumber, required this.customerId,
@@ -49,6 +70,7 @@ class Order {
     required this.salesmanId, required this.salesmanName, required this.status,
     required this.subtotal, required this.taxAmount, required this.discount,
     required this.total, this.notes, required this.items, required this.createdAt,
+    this.invoice,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -66,8 +88,10 @@ class Order {
     notes: j['notes'],
     items: (j['items'] as List? ?? []).map((i) => OrderItem.fromJson(i)).toList(),
     createdAt: DateTime.parse(j['createdAt']),
+    invoice: j['invoice'] != null ? OrderInvoice.fromJson(j['invoice']) : null,
   );
 
   bool get isPending => status == 'PENDING';
   bool get isCancelled => status == 'CANCELLED';
+  bool get hasInvoice => invoice != null;
 }

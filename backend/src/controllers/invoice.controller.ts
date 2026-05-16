@@ -22,7 +22,7 @@ export const getInvoices = async (req: AuthRequest, res: Response) => {
 
   const invoices = await prisma.invoice.findMany({
     where: {
-      ...(isSalesman ? { generatedById: req.user!.id } : {}),
+      ...(isSalesman ? { order: { salesmanId: req.user!.id } } : {}),
       ...(paymentStatus ? { paymentStatus: paymentStatus as any } : {}),
       ...(customerId ? { customerId: customerId as string } : {}),
       ...(from || to ? { createdAt: {
