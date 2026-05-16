@@ -70,28 +70,30 @@ model User {
   routes      Route[]
   checkIns    CheckIn[]
   vanLoads    VanLoad[]
+  attendance  Attendance[]
 
   @@map("users")
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  shopName     String
-  ownerName    String
-  phone        String
-  email        String?
-  address      String
-  area         String
-  route        String?
-  latitude     Float?
-  longitude    Float?
-  creditLimit  Float    @default(0)
-  taxNumber    String?
-  photos       String[]
-  notes        String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid())
+  shopName       String
+  arabicShopName String?
+  ownerName      String
+  phone          String
+  email          String?
+  address        String
+  area           String
+  route          String?
+  latitude       Float?
+  longitude      Float?
+  creditLimit    Float    @default(0)
+  taxNumber      String?
+  photos         String[]
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   orders       Order[]
   collections  Collection[]
@@ -322,4 +324,22 @@ model CheckIn {
   checkedInAt DateTime @default(now())
 
   @@map("check_ins")
+}
+
+model Attendance {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  date              DateTime
+  checkInAt         DateTime  @default(now())
+  checkInLatitude   Float
+  checkInLongitude  Float
+  checkInPhoto      String?
+  checkOutAt        DateTime?
+  checkOutLatitude  Float?
+  checkOutLongitude Float?
+  checkOutPhoto     String?
+  totalMinutes      Int?
+
+  @@map("attendance")
 }

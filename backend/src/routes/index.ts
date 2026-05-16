@@ -16,6 +16,7 @@ import * as reportCtrl from '../controllers/report.controller';
 import * as settingsCtrl from '../controllers/settings.controller';
 import * as routeCtrl from '../controllers/route.controller';
 import * as vanCtrl from '../controllers/van.controller';
+import * as attendanceCtrl from '../controllers/attendance.controller';
 
 const router = Router();
 
@@ -95,6 +96,12 @@ router.get('/reports/stock', authenticate, authorize(...adminRoles, 'MANAGER'), 
 router.get('/reports/product-wise', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getProductWiseReport);
 router.get('/reports/balance', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getBalanceReport);
 router.get('/reports/aging', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getAgingReport);
+
+// Attendance
+router.get('/attendance/today', authenticate, attendanceCtrl.getTodayStatus);
+router.get('/attendance', authenticate, attendanceCtrl.getAttendance);
+router.post('/attendance/checkin', authenticate, attendanceCtrl.uploadPhoto.single('photo'), attendanceCtrl.checkIn);
+router.post('/attendance/checkout', authenticate, attendanceCtrl.uploadPhoto.single('photo'), attendanceCtrl.checkOut);
 
 // Routes & Check-ins
 router.get('/routes', authenticate, routeCtrl.getRoutes);

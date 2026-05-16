@@ -38,18 +38,18 @@ export const getCustomer = async (req: Request, res: Response) => {
 };
 
 export const createCustomer = async (req: Request, res: Response) => {
-  const { shopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes } = req.body;
+  const { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes } = req.body;
   const customer = await prisma.customer.create({
-    data: { shopName, ownerName, phone, email, address, area, route, creditLimit: creditLimit || 0, taxNumber, latitude, longitude, notes },
+    data: { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit: creditLimit || 0, taxNumber, latitude, longitude, notes },
   });
   res.status(201).json(customer);
 };
 
 export const updateCustomer = async (req: Request, res: Response) => {
-  const { shopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive } = req.body;
+  const { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive } = req.body;
   const customer = await prisma.customer.update({
     where: { id: req.params.id },
-    data: { shopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive },
+    data: { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive },
   });
   res.json(customer);
 };

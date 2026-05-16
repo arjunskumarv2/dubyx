@@ -229,7 +229,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
@@ -312,7 +312,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                             Text(inv.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontFamily: 'monospace')),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                               child: Text(inv.paymentStatus, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
                             ),
                           ]),

@@ -121,15 +121,16 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       final inv = await _api.post('/invoices/generate', {'orderId': order['id']});
 
       if (!mounted) return;
-      Navigator.pop(context, true);
+      setState(() => _loading = false);
 
-      // 3. Show collect payment sheet immediately
-      _showCashInvoiceSheet(
+      // 3. Show collect sheet FIRST (context still valid), then pop on dismiss
+      await _showCashInvoiceSheet(
         invoiceId: inv['id'],
         invoiceNumber: inv['invoiceNumber'],
         customerName: _customer!.shopName,
         total: (inv['total'] as num).toDouble(),
       );
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.error));
@@ -138,19 +139,19 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     }
   }
 
-  void _showCashInvoiceSheet({
+  Future<void> _showCashInvoiceSheet({
     required String invoiceId,
     required String invoiceNumber,
     required String customerName,
     required double total,
-  }) {
+  }) async {
     final fmt = NumberFormat('#,##0.00');
     final amountCtrl = TextEditingController(text: total.toStringAsFixed(2));
     final refCtrl = TextEditingController();
     String method = 'CASH';
     bool collecting = false;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

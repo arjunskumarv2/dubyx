@@ -241,7 +241,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
@@ -292,7 +292,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
           if (_todayData != null)
             Container(
               padding: const EdgeInsets.all(16),
-              color: AppTheme.success.withOpacity(0.08),
+              color: AppTheme.success.withValues(alpha: 0.08),
               child: Row(children: [
                 Container(width: 40, height: 40, decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(10)),
                   child: const Icon(Iconsax.money_recive, color: Colors.white, size: 20)),
@@ -334,7 +334,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                               Text(inv['invoiceNumber'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 13, fontFamily: 'monospace')),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                                 child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
                               ),
                             ]),
@@ -401,7 +401,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
-                          leading: Container(width: 40, height: 40, decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                          leading: Container(width: 40, height: 40, decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                             child: const Icon(Iconsax.money_recive, color: AppTheme.success, size: 20)),
                           title: Text(c['customer']?['shopName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                           subtitle: Text('${c['collectedBy']?['name'] ?? ''} • ${(c['method'] as String).replaceAll('_', ' ')}', style: const TextStyle(fontSize: 11)),
