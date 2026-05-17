@@ -15,19 +15,29 @@ class PdfService {
   static const _lightGray = PdfColor.fromInt(0xFFF3F4F6);
   static const _whiteLight = PdfColor(1, 1, 1, 0.75);
 
+  // Strip non-ASCII chars — PDF Type1 fonts are Latin-1 only; Arabic glyphs render blank
+  String _safeCurrency(String? sym) {
+    if (sym == null || sym.isEmpty) return 'QAR';
+    final ascii = sym.replaceAll(RegExp(r'[^\x00-\x7F]'), '').trim();
+    return ascii.isEmpty ? 'QAR' : ascii;
+  }
+
+  String _fmt(NumberFormat fmt, num? value) => fmt.format(value ?? 0);
+
   Future<List<int>> generateInvoicePdf({
     required Invoice invoice,
     required List<OrderItem> items,
     Map<String, String>? settings,
   }) async {
     final doc = pw.Document();
-    final currency = settings?['currency_symbol'] ?? 'QAR';
+    final currency = _safeCurrency(settings?['currency_symbol']);
     final companyName = settings?['company_name'] ?? 'Dubyx Trading LLC';
     final companyAddress = settings?['company_address'] ?? 'Doha, Qatar';
     final companyPhone = settings?['company_phone'] ?? '';
     final companyEmail = settings?['company_email'] ?? '';
     final trn = settings?['company_trn'] ?? '';
-    final fmt = NumberFormat('#,##0.00');
+    // Force 'en' locale — device Arabic locale would emit non-ASCII numerals that PDF Type1 fonts can't render
+    final fmt = NumberFormat('#,##0.00', 'en');
 
     doc.addPage(pw.Page(
       pageFormat: PdfPageFormat.a4,
@@ -104,9 +114,9 @@ class PdfService {
                   children: [
                     _cell(item.productName),
                     _cell(item.quantity.toString(), right: true),
-                    _cell('$currency ${fmt.format(item.price)}', right: true),
+                    _cell('$currency ${_fmt(fmt, item.price)}', right: true),
                     _cell('${item.taxRate.toStringAsFixed(0)}%', right: true),
-                    _cell('$currency ${fmt.format(item.total)}', right: true),
+                    _cell('$currency ${_fmt(fmt, item.total)}', right: true),
                   ],
                 );
               }),
@@ -117,15 +127,15 @@ class PdfService {
           // Totals
           pw.Row(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
             pw.SizedBox(width: 200, child: pw.Column(children: [
-              _totalRow('Subtotal:', '$currency ${fmt.format(invoice.subtotal)}'),
-              _totalRow('Tax:', '$currency ${fmt.format(invoice.taxAmount)}'),
+              _totalRow('Subtotal:', '$currency ${_fmt(fmt, invoice.subtotal)}'),
+              _totalRow('Tax:', '$currency ${_fmt(fmt, invoice.taxAmount)}'),
               if (invoice.discount > 0)
-                _totalRow('Discount (${invoice.discount.toStringAsFixed(0)}%):', '-$currency ${fmt.format(invoice.subtotal * invoice.discount / 100)}'),
+                _totalRow('Discount (${invoice.discount.toStringAsFixed(0)}%):', '-$currency ${_fmt(fmt, invoice.subtotal * invoice.discount / 100)}'),
               pw.Divider(color: _maroon),
-              _totalRow('TOTAL:', '$currency ${fmt.format(invoice.total)}', bold: true),
+              _totalRow('TOTAL:', '$currency ${_fmt(fmt, invoice.total)}', bold: true),
               if (invoice.paidAmount > 0) ...[
-                _totalRow('Paid:', '$currency ${fmt.format(invoice.paidAmount)}'),
-                _totalRow('Balance Due:', '$currency ${fmt.format(invoice.balance)}', bold: true),
+                _totalRow('Paid:', '$currency ${_fmt(fmt, invoice.paidAmount)}'),
+                _totalRow('Balance Due:', '$currency ${_fmt(fmt, invoice.balance)}', bold: true),
               ],
             ])),
           ]),

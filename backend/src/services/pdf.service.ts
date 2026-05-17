@@ -19,7 +19,10 @@ export const generateInvoicePDF = async (invoice: any, settings: Record<string, 
     const companyAddress = settings.company_address || 'Doha, Qatar';
     const companyPhone = settings.company_phone || '';
     const companyEmail = settings.company_email || '';
-    const currency = settings.currency_symbol || 'QAR';
+    // Strip non-ASCII chars — PDFKit Helvetica is Latin-1 only; Arabic symbols render blank
+    const rawCurrency = settings.currency_symbol || 'QAR';
+    const currency = rawCurrency.replace(/[^\x00-\x7F]/g, '').trim() || 'QAR';
+    const n = (v: any) => (typeof v === 'number' && isFinite(v) ? v : 0);
 
     // Header background
     doc.rect(0, 0, doc.page.width, 120).fill(maroon);
@@ -96,9 +99,9 @@ export const generateInvoicePDF = async (invoice: any, settings: Record<string, 
       doc.fillColor(dark).font('Helvetica').fontSize(9)
         .text(item.product?.name || '', colX[0], rowY + 6, { width: colWidths[0] })
         .text(item.quantity.toString(), colX[1], rowY + 6, { width: colWidths[1], align: 'right' })
-        .text(`${currency} ${item.price.toFixed(2)}`, colX[2], rowY + 6, { width: colWidths[2], align: 'right' })
-        .text(`${item.taxRate}%`, colX[3], rowY + 6, { width: colWidths[3], align: 'right' })
-        .text(`${currency} ${item.total.toFixed(2)}`, colX[4], rowY + 6, { width: colWidths[4], align: 'right' });
+        .text(`${currency} ${n(item.price).toFixed(2)}`, colX[2], rowY + 6, { width: colWidths[2], align: 'right' })
+        .text(`${n(item.taxRate).toFixed(0)}%`, colX[3], rowY + 6, { width: colWidths[3], align: 'right' })
+        .text(`${currency} ${n(item.total).toFixed(2)}`, colX[4], rowY + 6, { width: colWidths[4], align: 'right' });
 
       rowY += 22;
     });
@@ -115,17 +118,17 @@ export const generateInvoicePDF = async (invoice: any, settings: Record<string, 
         .text(value, totalsX + 115, y, { width: 110, align: 'right' });
     };
 
-    drawTotal('Subtotal:', `${currency} ${invoice.subtotal.toFixed(2)}`, totalsY);
-    drawTotal('Tax:', `${currency} ${invoice.taxAmount.toFixed(2)}`, totalsY + 18);
-    if (invoice.discount > 0) {
-      drawTotal('Discount:', `-${currency} ${(invoice.subtotal * invoice.discount / 100).toFixed(2)}`, totalsY + 36);
+    drawTotal('Subtotal:', `${currency} ${n(invoice.subtotal).toFixed(2)}`, totalsY);
+    drawTotal('Tax:', `${currency} ${n(invoice.taxAmount).toFixed(2)}`, totalsY + 18);
+    if (n(invoice.discount) > 0) {
+      drawTotal('Discount:', `-${currency} ${(n(invoice.subtotal) * n(invoice.discount) / 100).toFixed(2)}`, totalsY + 36);
     }
     doc.rect(totalsX, totalsY + 58, 235, 1).fill(maroon);
-    drawTotal('TOTAL:', `${currency} ${invoice.total.toFixed(2)}`, totalsY + 66, true);
+    drawTotal('TOTAL:', `${currency} ${n(invoice.total).toFixed(2)}`, totalsY + 66, true);
 
-    if (invoice.paidAmount > 0) {
-      drawTotal('Paid:', `${currency} ${invoice.paidAmount.toFixed(2)}`, totalsY + 90);
-      drawTotal('Balance Due:', `${currency} ${(invoice.total - invoice.paidAmount).toFixed(2)}`, totalsY + 108, true);
+    if (n(invoice.paidAmount) > 0) {
+      drawTotal('Paid:', `${currency} ${n(invoice.paidAmount).toFixed(2)}`, totalsY + 90);
+      drawTotal('Balance Due:', `${currency} ${(n(invoice.total) - n(invoice.paidAmount)).toFixed(2)}`, totalsY + 108, true);
     }
 
     // Notes
