@@ -22,30 +22,32 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
   final _api = ApiService();
   final _pdf = PdfService();
   Map<String, String> _settings = {};
+  List<OrderItem> _items = [];
   bool _generatingPdf = false;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadData();
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadData() async {
     try {
-      final data = await _api.get('/settings');
+      final results = await Future.wait([
+        _api.get('/settings'),
+        _api.get('/invoices/${widget.invoice.id}'),
+      ]);
+      final fullInvoice = results[1] as Map<String, dynamic>;
+      final rawItems = fullInvoice['order']?['items'] as List? ?? [];
       setState(() {
-        _settings = Map<String, String>.from(data);
+        _settings = Map<String, String>.from(results[0] as Map);
+        _items = rawItems.map((i) => OrderItem.fromJson(i as Map<String, dynamic>)).toList();
         _loading = false;
       });
     } catch (_) {
       setState(() => _loading = false);
     }
-  }
-
-  List<OrderItem> get _items {
-    final rawItems = widget.invoice.order?['items'] as List? ?? [];
-    return rawItems.map((i) => OrderItem.fromJson(i)).toList();
   }
 
   Future<void> _generateAndPreview() async {
