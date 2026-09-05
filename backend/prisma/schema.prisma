@@ -56,6 +56,24 @@ enum StockRequestStatus {
   REJECTED
 }
 
+enum JourneyType {
+  PLANNED
+  EMERGENCY
+}
+
+enum JourneyStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum JourneyStopStatus {
+  PENDING
+  VISITED
+  SKIPPED
+}
+
 model User {
   id          String   @id @default(uuid())
   name        String
@@ -80,6 +98,9 @@ model User {
   attendance       Attendance[]
   stockRequests    StockRequest[]
   assignedVehicles Vehicle[]
+  journeyPlans     JourneyPlan[]
+  journeys         Journey[]      @relation("JourneySalesman")
+  createdJourneys  Journey[]      @relation("JourneyCreator")
 
   @@map("users")
 }
@@ -109,6 +130,7 @@ model Customer {
   invoices     Invoice[]
   routeStops   RouteStop[]
   checkIns     CheckIn[]
+  journeyStops JourneyStop[]
 
   @@map("customers")
 }
@@ -278,6 +300,8 @@ model Route {
   isActive   Boolean     @default(true)
   createdAt  DateTime    @default(now())
   stops      RouteStop[]
+  planDays   JourneyPlanDay[]
+  journeys   Journey[]
 
   @@map("routes")
 }
@@ -308,6 +332,8 @@ model Vehicle {
   updatedAt      DateTime  @updatedAt
 
   vanLoads       VanLoad[]
+  journeyPlans   JourneyPlan[]
+  journeys       Journey[]
 
   @@map("vehicles")
 }
@@ -399,4 +425,82 @@ model StockRequestItem {
   requestedQty   Int
 
   @@map("stock_request_items")
+}
+
+model JourneyPlan {
+  id         String    @id @default(uuid())
+  name       String
+  salesmanId String
+  salesman   User      @relation(fields: [salesmanId], references: [id])
+  vehicleId  String?
+  vehicle    Vehicle?  @relation(fields: [vehicleId], references: [id])
+  startDate  DateTime?
+  endDate    DateTime?
+  notes      String?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  days     JourneyPlanDay[]
+  journeys Journey[]
+
+  @@map("journey_plans")
+}
+
+model JourneyPlanDay {
+  id        String      @id @default(uuid())
+  planId    String
+  plan      JourneyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  routeId   String
+  route     Route       @relation(fields: [routeId], references: [id])
+  startTime String?
+  notes     String?
+
+  @@unique([planId, dayOfWeek])
+  @@map("journey_plan_days")
+}
+
+model Journey {
+  id            String        @id @default(uuid())
+  journeyNumber String        @unique
+  type          JourneyType   @default(PLANNED)
+  status        JourneyStatus @default(PENDING)
+  date          DateTime
+  salesmanId    String
+  salesman      User          @relation("JourneySalesman", fields: [salesmanId], references: [id])
+  planId        String?
+  plan          JourneyPlan?  @relation(fields: [planId], references: [id])
+  routeId       String?
+  route         Route?        @relation(fields: [routeId], references: [id])
+  vehicleId     String?
+  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id])
+  reason        String?
+  notes         String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdById   String?
+  createdBy     User?         @relation("JourneyCreator", fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  stops JourneyStop[]
+
+  @@index([salesmanId, date])
+  @@map("journeys")
+}
+
+model JourneyStop {
+  id         String            @id @default(uuid())
+  journeyId  String
+  journey    Journey           @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  stopOrder  Int
+  status     JourneyStopStatus @default(PENDING)
+  notes      String?
+  visitedAt  DateTime?
+
+  @@unique([journeyId, customerId])
+  @@map("journey_stops")
 }

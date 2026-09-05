@@ -13,6 +13,7 @@ import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import RouteManagement from './pages/RouteManagement';
+import JourneyPlans from './pages/JourneyPlans';
 import VanManagement from './pages/VanManagement';
 import Attendance from './pages/Attendance';
 
@@ -39,6 +40,7 @@ const AppRoutes = () => {
         <Route path="gps" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><GPSTracking /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><Reports /></ProtectedRoute>} />
         <Route path="routes" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><RouteManagement /></ProtectedRoute>} />
+        <Route path="journey-plans" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><JourneyPlans /></ProtectedRoute>} />
         <Route path="vans" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><VanManagement /></ProtectedRoute>} />
         <Route path="attendance" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}><Attendance /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><Users /></ProtectedRoute>} />

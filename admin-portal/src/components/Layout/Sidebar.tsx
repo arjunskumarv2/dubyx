@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   LayoutDashboard, ShoppingCart, Users, Package, FileText,
-  DollarSign, MapPin, BarChart3, Settings, UserCog, LogOut, Route, Truck, CalendarCheck
+  DollarSign, MapPin, BarChart3, Settings, UserCog, LogOut, Route, Truck, CalendarCheck, CalendarDays
 } from 'lucide-react';
 
 const navItems = [
@@ -17,6 +17,7 @@ const navItems = [
 const adminNavItems = [
   { path: '/gps', label: 'GPS Tracking', icon: MapPin, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
   { path: '/routes', label: 'Route Management', icon: Route, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+  { path: '/journey-plans', label: 'Journey Plans', icon: CalendarDays, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
   { path: '/vans', label: 'Van Management', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
   { path: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
   { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },

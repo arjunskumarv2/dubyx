@@ -166,6 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _QuickAction(icon: Iconsax.people, label: 'Customers', color: const Color(0xFF3B82F6), onTap: () => Navigator.pushNamed(context, '/customers')),
                     _QuickAction(icon: Iconsax.document_text, label: 'Invoices', color: const Color(0xFF10B981), onTap: () => Navigator.pushNamed(context, '/invoices')),
                     _QuickAction(icon: Iconsax.money_recive, label: 'Collections', color: AppTheme.gold, onTap: () => Navigator.pushNamed(context, '/collections')),
+                    _QuickAction(icon: Iconsax.calendar_1, label: 'My Journey', color: const Color(0xFF0EA5E9), onTap: () => Navigator.pushNamed(context, '/journey')),
                     _QuickAction(icon: Iconsax.truck, label: 'Van Stock', color: const Color(0xFF8B5CF6), onTap: () => Navigator.pushNamed(context, '/van-stock')),
                     _QuickAction(icon: Iconsax.box, label: 'Inventory', color: const Color(0xFFEF4444), onTap: () => Navigator.pushNamed(context, '/inventory')),
                   ],
