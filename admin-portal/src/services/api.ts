@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// Always same-origin. In production Vercel rewrites /api to the backend
+// (see vercel.json); in development Vite proxies it (see vite.config.ts).
+// Deliberately not configurable: a stale VITE_API_URL in the hosting
+// dashboard silently overrides the rewrite and points the portal at a dead
+// backend, which is exactly what happened with the old Render URL.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: '/api',
   timeout: 30000,
 });
 
