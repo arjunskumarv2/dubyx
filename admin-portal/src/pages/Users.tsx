@@ -75,7 +75,8 @@ function AttendanceModal({ user, onClose }: { user: any; onClose: () => void }) 
     else setMonth(m => m + 1);
   };
 
-  const apiBase = import.meta.env.VITE_API_URL || 'https://dubyx-backend.onrender.com';
+  // Uploads are served from this origin (proxied to the API in production)
+  const apiBase = '';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

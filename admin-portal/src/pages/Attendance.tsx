@@ -44,7 +44,8 @@ export default function Attendance() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [photoModal, setPhotoModal] = useState<string | null>(null);
 
-  const apiBase = import.meta.env.VITE_API_URL || 'https://dubyx-backend.onrender.com';
+  // Uploads are served from this origin (proxied to the API in production)
+  const apiBase = '';
 
   const { data: users = [] } = useQuery({
     queryKey: ['users-all'],

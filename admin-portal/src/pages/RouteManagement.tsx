@@ -228,7 +228,7 @@ export default function RouteManagement() {
                   </td>
                   <td className="px-4 py-3">
                     {ci.selfiePath
-                      ? <a href={`https://dubyx-backend.onrender.com${ci.selfiePath}`} target="_blank" rel="noreferrer" className="text-[#8D1B3D] hover:underline text-xs flex items-center gap-1"><Camera size={12} />View</a>
+                      ? <a href={ci.selfiePath} target="_blank" rel="noreferrer" className="text-[#8D1B3D] hover:underline text-xs flex items-center gap-1"><Camera size={12} />View</a>
                       : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                 </tr>

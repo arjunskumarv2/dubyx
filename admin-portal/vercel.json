@@ -1,5 +1,16 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://43-204-250-145.sslip.io/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://43-204-250-145.sslip.io/uploads/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
