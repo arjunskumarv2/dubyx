@@ -61,8 +61,31 @@ This creates `superadmin@dubyx.sa`, `admin@dubyx.sa` and `sales1@dubyx.sa`.
 
 ## 5. Point the apps at the new host
 
-- Mobile: `mobile-app/lib/utils/constants.dart` → `apiBaseUrl = 'https://api.yourdomain.com/api'`, then rebuild the APK
-- Portal: already baked in at build time by `bootstrap.sh`
+- **Portal** — already baked in at build time by `bootstrap.sh`.
+- **Mobile** — pass the host at build time, no source edit needed:
+
+  ```bash
+  cd mobile-app
+  flutter build apk --release --split-per-abi \
+    --dart-define=API_BASE_URL=https://api.yourdomain.com/api
+  ```
+
+## No domain? Use a free one
+
+The mobile app needs HTTPS, and a certificate needs a hostname — an EC2
+public DNS name will not do. If you do not own a domain, create a free
+subdomain at [duckdns.org](https://duckdns.org) (takes a minute), point it at
+the instance's Elastic IP, and use it as `DOMAIN`. Caddy will get a valid
+Let's Encrypt certificate for it.
+
+## Moving existing data across
+
+If the old database is still reachable, copy it over rather than re-seeding:
+
+```bash
+pg_dump "<old DATABASE_URL>" > dump.sql
+docker compose exec -T db psql -U dubyx dubyx < dump.sql
+```
 
 ## Operations
 
