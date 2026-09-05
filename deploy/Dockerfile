@@ -29,4 +29,4 @@ COPY backend/assets ./assets
 EXPOSE 5000
 # Apply the schema, then start. `db push` is used because this project does not
 # keep a migrations folder (it is gitignored).
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss=false || npx prisma db push --skip-generate; node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate || echo 'schema push failed - starting anyway'; node dist/index.js"]
