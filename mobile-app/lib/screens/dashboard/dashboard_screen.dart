@@ -137,11 +137,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(children: [
                 Expanded(child: StatCard(title: "Today's Orders", value: '${_stats?['todayOrders'] ?? 0}', icon: Iconsax.shopping_cart, color: AppTheme.primary)),
                 const SizedBox(width: 12),
-                Expanded(child: StatCard(title: 'Collected Today', value: 'QAR ${((_stats?['todayCollections'] ?? 0) as num).toStringAsFixed(0)}', icon: Iconsax.money, color: AppTheme.gold)),
+                Expanded(child: StatCard(title: 'Collected Today', value: 'SAR ${((_stats?['todayCollections'] ?? 0) as num).toStringAsFixed(0)}', icon: Iconsax.money, color: AppTheme.gold)),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                Expanded(child: StatCard(title: 'Pending Amount', value: 'QAR ${((_stats?['pendingAmount'] ?? 0) as num).toStringAsFixed(0)}', icon: Iconsax.clock, color: const Color(0xFFF59E0B))),
+                Expanded(child: StatCard(title: 'Pending Amount', value: 'SAR ${((_stats?['pendingAmount'] ?? 0) as num).toStringAsFixed(0)}', icon: Iconsax.clock, color: const Color(0xFFF59E0B))),
                 const SizedBox(width: 12),
                 Expanded(child: StatCard(title: 'Customers', value: '${_stats?['totalCustomers'] ?? 0}', icon: Iconsax.people, color: const Color(0xFF3B82F6))),
               ]),

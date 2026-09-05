@@ -68,7 +68,8 @@ export default function GPSTracking() {
     location: liveLocations[l.id] || l.location,
   }));
 
-  const centerQatar: [number, number] = [25.2854, 51.5310];
+  // Riyadh — default map centre
+  const centerSaudi: [number, number] = [24.7136, 46.6753];
 
   return (
     <div className="space-y-4 h-full">
@@ -114,7 +115,7 @@ export default function GPSTracking() {
 
         {/* Map */}
         <div className="col-span-3 card overflow-hidden">
-          <MapContainer center={centerQatar} zoom={11} className="w-full h-full" style={{ zIndex: 1 }}>
+          <MapContainer center={centerSaudi} zoom={11} className="w-full h-full" style={{ zIndex: 1 }}>
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; OpenStreetMap contributors'

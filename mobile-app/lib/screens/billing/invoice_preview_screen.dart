@@ -86,7 +86,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
         final message = Uri.encodeComponent(
           'Hello ${widget.invoice.customerName},\n\n'
           'Your invoice ${widget.invoice.invoiceNumber} is ready.\n'
-          'Amount: QAR ${widget.invoice.total.toStringAsFixed(2)}\n'
+          'Amount: SAR ${widget.invoice.total.toStringAsFixed(2)}\n'
           'Please check your WhatsApp for the PDF.\n\nDubyx Trading LLC'
         );
         final waUrl = 'whatsapp://send?phone=$phone&text=$message';
@@ -103,7 +103,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
   Widget build(BuildContext context) {
     final inv = widget.invoice;
     final fmt = NumberFormat('#,##0.00');
-    final currency = _settings['currency_symbol'] ?? 'QAR';
+    final currency = _settings['currency'] ?? 'SAR';
 
     return Scaffold(
       appBar: AppBar(
@@ -130,7 +130,7 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                   const Text('INVOICE', style: TextStyle(color: Color(0xFFC9A84C), fontSize: 20, fontWeight: FontWeight.w900)),
                 ]),
                 const SizedBox(height: 4),
-                Text(_settings['company_address'] ?? 'Doha, Qatar', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                Text(_settings['company_address'] ?? 'Riyadh, Saudi Arabia', style: const TextStyle(color: Colors.white60, fontSize: 11)),
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -184,11 +184,11 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(color: const Color(0xFFF8F5F0), borderRadius: BorderRadius.circular(12)),
                   child: Column(children: [
-                    _totalRow('Subtotal', '$currency ${fmt.format(inv.subtotal)}'),
-                    _totalRow('Tax (VAT)', '$currency ${fmt.format(inv.taxAmount)}'),
+                    _totalRow('Total (excl. VAT)', '$currency ${fmt.format(inv.subtotal)}'),
+                    _totalRow('VAT (${_settings['default_tax_rate'] ?? '15'}%)', '$currency ${fmt.format(inv.taxAmount)}'),
                     if (inv.discount > 0) _totalRow('Discount', '-$currency ${fmt.format(inv.subtotal * inv.discount / 100)}'),
                     const Divider(height: 16),
-                    _totalRow('TOTAL', '$currency ${fmt.format(inv.total)}', bold: true, valueColor: AppTheme.primary),
+                    _totalRow('Total (incl. VAT)', '$currency ${fmt.format(inv.total)}', bold: true, valueColor: AppTheme.primary),
                     if (inv.paidAmount > 0) ...[
                       _totalRow('Paid', '$currency ${fmt.format(inv.paidAmount)}', valueColor: AppTheme.success),
                       _totalRow('Balance Due', '$currency ${fmt.format(inv.balance)}', bold: true, valueColor: AppTheme.error),

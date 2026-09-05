@@ -76,6 +76,9 @@ router.get('/invoices', authenticate, invoiceCtrl.getInvoices);
 router.get('/invoices/:id', authenticate, invoiceCtrl.getInvoice);
 router.post('/invoices/generate', authenticate, invoiceCtrl.generateInvoice);
 router.get('/invoices/:id/pdf', authenticate, invoiceCtrl.generatePDF);
+router.get('/invoices/:id/xml', authenticate, authorize(...adminRoles, 'MANAGER'), invoiceCtrl.getInvoiceXml);
+router.post('/invoices/credit-note', authenticate, authorize(...adminRoles, 'MANAGER'), invoiceCtrl.createCreditNote);
+router.post('/invoices/verify-qr', authenticate, invoiceCtrl.verifyQrCode);
 router.get('/orders/:orderId/preview', authenticate, invoiceCtrl.previewInvoice);
 router.post('/invoices/:id/payment', authenticate, invoiceCtrl.recordPayment);
 
@@ -100,6 +103,7 @@ router.get('/reports/stock', authenticate, authorize(...adminRoles, 'MANAGER'), 
 router.get('/reports/product-wise', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getProductWiseReport);
 router.get('/reports/balance', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getBalanceReport);
 router.get('/reports/aging', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getAgingReport);
+router.get('/reports/vat-return', authenticate, authorize(...adminRoles, 'MANAGER'), reportCtrl.getVatReturn);
 
 // Attendance
 router.get('/attendance/today', authenticate, attendanceCtrl.getTodayStatus);

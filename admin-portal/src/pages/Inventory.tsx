@@ -121,8 +121,8 @@ export default function Inventory() {
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.sku}</td>
                   <td className="px-4 py-3 text-gray-600">{p.category?.name}</td>
-                  <td className="px-4 py-3 font-semibold">QAR {p.sellingPrice?.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-gray-500">QAR {p.costPrice?.toFixed(2)}</td>
+                  <td className="px-4 py-3 font-semibold">SAR {p.sellingPrice?.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-gray-500">SAR {p.costPrice?.toFixed(2)}</td>
                   <td className="px-4 py-3 text-gray-500">{p.taxRate}%</td>
                   <td className="px-4 py-3">
                     <span className={`font-bold ${p.currentStock <= p.minStock ? 'text-red-600' : 'text-green-600'}`}>{p.currentStock}</span>
@@ -171,11 +171,11 @@ export default function Inventory() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (QAR)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (SAR)</label>
                   <input type="number" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: Number(e.target.value) })} className="input" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (QAR)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR)</label>
                   <input type="number" value={form.costPrice} onChange={e => setForm({ ...form, costPrice: Number(e.target.value) })} className="input" />
                 </div>
                 <div>

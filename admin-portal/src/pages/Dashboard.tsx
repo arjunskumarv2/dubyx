@@ -58,8 +58,8 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={ShoppingCart} title="Today's Orders" value={stats?.todayOrders || 0} subtitle={`${stats?.monthOrders || 0} this month`} color="bg-[#8D1B3D]" />
-        <StatCard icon={DollarSign} title="Today's Collections" value={`QAR ${(stats?.todayCollections || 0).toFixed(0)}`} subtitle={`QAR ${(stats?.monthCollections || 0).toFixed(0)} this month`} color="bg-[#C9A84C]" />
-        <StatCard icon={Clock} title="Pending Amount" value={`QAR ${(stats?.pendingAmount || 0).toFixed(0)}`} subtitle={`${stats?.pendingInvoicesCount || 0} invoices`} color="bg-orange-500" />
+        <StatCard icon={DollarSign} title="Today's Collections" value={`SAR ${(stats?.todayCollections || 0).toFixed(0)}`} subtitle={`SAR ${(stats?.monthCollections || 0).toFixed(0)} this month`} color="bg-[#C9A84C]" />
+        <StatCard icon={Clock} title="Pending Amount" value={`SAR ${(stats?.pendingAmount || 0).toFixed(0)}`} subtitle={`${stats?.pendingInvoicesCount || 0} invoices`} color="bg-orange-500" />
         <StatCard icon={UserCheck} title="Active Salesmen" value={stats?.activeSalesmen || 0} subtitle="Field executives" color="bg-emerald-500" />
       </div>
 
@@ -86,7 +86,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Weekly Collections (QAR)</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Weekly Collections (SAR)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

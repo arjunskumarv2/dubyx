@@ -85,7 +85,7 @@ export default function Orders() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{order.salesman?.name}</td>
                   <td className="px-4 py-3 text-gray-600">{order.items?.length} items</td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">QAR {order.total?.toFixed(2)}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900">SAR {order.total?.toFixed(2)}</td>
                   <td className="px-4 py-3"><span className={statusColors[order.status] || 'badge-pending'}>{order.status}</span></td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
@@ -139,16 +139,16 @@ export default function Orders() {
                     <tr key={item.id} className="border-t">
                       <td className="py-2">{item.product?.name}</td>
                       <td className="text-right">{item.quantity}</td>
-                      <td className="text-right">QAR {item.price?.toFixed(2)}</td>
-                      <td className="text-right font-medium">QAR {item.total?.toFixed(2)}</td>
+                      <td className="text-right">SAR {item.price?.toFixed(2)}</td>
+                      <td className="text-right font-medium">SAR {item.total?.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="border-t pt-3 text-sm space-y-1">
-                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>QAR {selectedOrder.subtotal?.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>QAR {selectedOrder.taxAmount?.toFixed(2)}</span></div>
-                <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-[#8D1B3D]">QAR {selectedOrder.total?.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>SAR {selectedOrder.subtotal?.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>SAR {selectedOrder.taxAmount?.toFixed(2)}</span></div>
+                <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-[#8D1B3D]">SAR {selectedOrder.total?.toFixed(2)}</span></div>
               </div>
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function Orders() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h3 className="font-bold text-lg mb-2">Generate Invoice</h3>
-            <p className="text-gray-500 text-sm mb-6">Generate invoice for order <strong>{selectedOrder.orderNumber}</strong>?<br />Total: <strong className="text-[#8D1B3D]">QAR {selectedOrder.total?.toFixed(2)}</strong></p>
+            <p className="text-gray-500 text-sm mb-6">Generate invoice for order <strong>{selectedOrder.orderNumber}</strong>?<br />Total: <strong className="text-[#8D1B3D]">SAR {selectedOrder.total?.toFixed(2)}</strong></p>
             <div className="flex gap-3">
               <button onClick={() => { setShowInvoiceModal(false); setSelectedOrder(null); }} className="btn-secondary flex-1">Cancel</button>
               <button onClick={() => generateInvoice.mutate(selectedOrder.id)} disabled={generateInvoice.isPending} className="btn-primary flex-1">

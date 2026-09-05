@@ -1,6 +1,45 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth';
+import * as zatca from '../services/zatca.service';
+
+/**
+ * Saudi-specific validation. A VAT number is optional (small shops are not all
+ * registered) but when present it must be well formed, because it decides
+ * whether the customer gets a standard or a simplified tax invoice.
+ */
+const validateSaudiFields = (body: any): string | null => {
+  if (body.vatNumber && !zatca.isValidVatNumber(body.vatNumber)) {
+    return 'VAT number must be 15 digits starting and ending with 3 (e.g. 310175397500003)';
+  }
+  if (body.crNumber && !zatca.isValidCrNumber(body.crNumber)) {
+    return 'Commercial Registration number must be 10 digits';
+  }
+  if (body.phone && !zatca.isValidSaudiPhone(body.phone)) {
+    return 'Phone must be a Saudi mobile number (05XXXXXXXX or +9665XXXXXXXX)';
+  }
+  if (body.postalCode && !zatca.isValidPostalCode(body.postalCode)) {
+    return 'Postal code must be 5 digits';
+  }
+  if (body.buildingNumber && !zatca.isValidBuildingNumber(body.buildingNumber)) {
+    return 'Building number must be 4 digits (Saudi National Address)';
+  }
+  if (body.additionalNumber && !zatca.isValidAdditionalNumber(body.additionalNumber)) {
+    return 'Additional number must be 4 digits (Saudi National Address)';
+  }
+  return null;
+};
+
+const saudiFields = (body: any) => ({
+  vatNumber: body.vatNumber || null,
+  crNumber: body.crNumber || null,
+  buildingNumber: body.buildingNumber || null,
+  street: body.street || null,
+  district: body.district || null,
+  city: body.city || null,
+  postalCode: body.postalCode || null,
+  additionalNumber: body.additionalNumber || null,
+});
 
 export const getCustomers = async (req: Request, res: Response) => {
   const { search, area, route, isActive } = req.query;
@@ -39,17 +78,37 @@ export const getCustomer = async (req: Request, res: Response) => {
 
 export const createCustomer = async (req: Request, res: Response) => {
   const { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes } = req.body;
+
+  const error = validateSaudiFields(req.body);
+  if (error) return res.status(400).json({ message: error });
+
   const customer = await prisma.customer.create({
-    data: { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit: creditLimit || 0, taxNumber, latitude, longitude, notes },
+    data: {
+      shopName, arabicShopName, ownerName,
+      phone: phone ? zatca.normalizeSaudiPhone(phone) : phone,
+      email, address, area, route,
+      creditLimit: creditLimit || 0, taxNumber, latitude, longitude, notes,
+      ...saudiFields(req.body),
+    },
   });
   res.status(201).json(customer);
 };
 
 export const updateCustomer = async (req: Request, res: Response) => {
   const { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive } = req.body;
+
+  const error = validateSaudiFields(req.body);
+  if (error) return res.status(400).json({ message: error });
+
   const customer = await prisma.customer.update({
     where: { id: req.params.id },
-    data: { shopName, arabicShopName, ownerName, phone, email, address, area, route, creditLimit, taxNumber, latitude, longitude, notes, isActive },
+    data: {
+      shopName, arabicShopName, ownerName,
+      phone: phone ? zatca.normalizeSaudiPhone(phone) : phone,
+      email, address, area, route,
+      creditLimit, taxNumber, latitude, longitude, notes, isActive,
+      ...saudiFields(req.body),
+    },
   });
   res.json(customer);
 };

@@ -45,7 +45,7 @@ export default function Login() {
               </div>
             ))}
           </div>
-          <p className="text-white/40 text-sm mt-10">Designed for Qatar's Retail Landscape</p>
+          <p className="text-white/40 text-sm mt-10">Designed for Saudi Arabia's Retail Landscape</p>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ export default function Login() {
           </div>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            Dubyx Trading LLC &mdash; Doha, Qatar &copy; {new Date().getFullYear()}
+            Dubyx Trading Est. &mdash; Riyadh, Saudi Arabia &copy; {new Date().getFullYear()}
           </p>
         </div>
       </div>

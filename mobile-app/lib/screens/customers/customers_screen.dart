@@ -120,7 +120,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           icon: const Icon(Iconsax.call, size: 18, color: AppTheme.primary),
                           visualDensity: VisualDensity.compact,
                         ),
-                        Text('QAR ${c.creditLimit.toStringAsFixed(0)}', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+                        Text('SAR ${c.creditLimit.toStringAsFixed(0)}', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
                         const Text('Credit', style: TextStyle(fontSize: 9, color: AppTheme.textGray)),
                       ]),
                     ]),
@@ -277,7 +277,7 @@ class _CreateCustomerSheetState extends State<_CreateCustomerSheet> {
                       _label('Phone *'),
                       TextFormField(
                         controller: _phoneCtrl,
-                        decoration: _inputDecor('+974 XXXX XXXX'),
+                        decoration: _inputDecor('05XXXXXXXX'),
                         keyboardType: TextInputType.phone,
                         validator: (v) => v!.trim().isEmpty ? 'Required' : null,
                       ),
@@ -322,7 +322,7 @@ class _CreateCustomerSheetState extends State<_CreateCustomerSheet> {
                   ]),
                   const SizedBox(height: 10),
 
-                  _label('Credit Limit (QAR)'),
+                  _label('Credit Limit (SAR)'),
                   TextFormField(
                     controller: _creditCtrl,
                     decoration: _inputDecor('0'),
