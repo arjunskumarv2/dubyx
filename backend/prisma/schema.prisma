@@ -56,6 +56,30 @@ enum StockRequestStatus {
   REJECTED
 }
 
+enum VatCategory {
+  STANDARD
+  ZERO_RATED
+  EXEMPT
+}
+
+enum InvoiceType {
+  STANDARD
+  SIMPLIFIED
+}
+
+enum InvoiceKind {
+  INVOICE
+  CREDIT_NOTE
+  DEBIT_NOTE
+}
+
+enum ZatcaStatus {
+  NOT_SUBMITTED
+  REPORTED
+  CLEARED
+  FAILED
+}
+
 enum JourneyType {
   PLANNED
   EMERGENCY
@@ -119,6 +143,14 @@ model Customer {
   longitude      Float?
   creditLimit    Float    @default(0)
   taxNumber      String?
+  vatNumber      String?
+  crNumber       String?
+  buildingNumber String?
+  street         String?
+  district       String?
+  city           String?
+  postalCode     String?
+  additionalNumber String?
   photos         String[]
   notes          String?
   isActive       Boolean  @default(true)
@@ -157,7 +189,8 @@ model Product {
   category       Category  @relation(fields: [categoryId], references: [id])
   sellingPrice   Float
   costPrice      Float
-  taxRate        Float     @default(0)
+  taxRate        Float       @default(15)
+  vatCategory    VatCategory @default(STANDARD)
   unit           String    @default("PCS")
   currentStock   Int       @default(0)
   minStock       Int       @default(10)
@@ -216,8 +249,11 @@ model OrderItem {
 model Invoice {
   id             String        @id @default(uuid())
   invoiceNumber  String        @unique
-  orderId        String        @unique
-  order          Order         @relation(fields: [orderId], references: [id])
+  uuid           String        @unique @default(uuid())
+  invoiceType    InvoiceType   @default(STANDARD)
+  invoiceKind    InvoiceKind   @default(INVOICE)
+  orderId        String?       @unique
+  order          Order?        @relation(fields: [orderId], references: [id])
   customerId     String
   customer       Customer      @relation(fields: [customerId], references: [id])
   generatedById  String
@@ -229,8 +265,24 @@ model Invoice {
   total          Float
   paidAmount     Float         @default(0)
   dueDate        DateTime?
+  supplyDate     DateTime?
   notes          String?
   pdfPath        String?
+  xmlPath        String?
+
+  // ZATCA e-invoicing (Fatoora)
+  qrCode         String?       @db.Text
+  invoiceHash    String?
+  previousHash   String?
+  zatcaStatus    ZatcaStatus   @default(NOT_SUBMITTED)
+  zatcaMessage   String?
+
+  // Credit / debit notes reference the invoice they correct
+  originalInvoiceId String?
+  originalInvoice   Invoice?   @relation("InvoiceCorrections", fields: [originalInvoiceId], references: [id])
+  corrections       Invoice[]  @relation("InvoiceCorrections")
+  noteReason        String?
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

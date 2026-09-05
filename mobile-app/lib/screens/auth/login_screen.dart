@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text('Dubyx Trading LLC — Doha, Qatar', style: TextStyle(fontSize: 11, color: Color(0xFFBDBDBD))),
+                const Text('Dubyx Trading Est. — Riyadh, Saudi Arabia', style: TextStyle(fontSize: 11, color: Color(0xFFBDBDBD))),
               ],
             ),
           ),

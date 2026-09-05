@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, TrendingUp, Package, DollarSign, BarChart3, Clock, Users } from 'lucide-react';
+import { Calendar, TrendingUp, Package, DollarSign, BarChart3, Clock, Users, Receipt } from 'lucide-react';
 import api from '../services/api';
 
 const COLORS = ['#8D1B3D', '#C9A84C', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'];
 
-const fmt = (n: number) => `QAR ${n.toFixed(0)}`;
+const fmt = (n: number) => `SAR ${n.toFixed(0)}`;
 const today = new Date().toISOString().slice(0, 10);
 const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
 
-type Tab = 'sales' | 'stock' | 'product' | 'balance' | 'aging';
+type Tab = 'sales' | 'stock' | 'product' | 'balance' | 'aging' | 'vat';
 
 export default function Reports() {
   const [tab, setTab] = useState<Tab>('sales');
@@ -60,12 +60,20 @@ export default function Reports() {
     enabled: tab === 'aging',
   });
 
+  // VAT return figures for the ZATCA filing period
+  const { data: vat } = useQuery({
+    queryKey: ['vat-return', from, to],
+    queryFn: () => api.get('/reports/vat-return', { params }).then(r => r.data),
+    enabled: tab === 'vat',
+  });
+
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: 'sales', label: 'Sales Performance', icon: TrendingUp },
     { key: 'stock', label: 'Stock Report', icon: Package },
     { key: 'product', label: 'Product Wise', icon: BarChart3 },
     { key: 'balance', label: 'Balance', icon: DollarSign },
     { key: 'aging', label: 'Aging', icon: Clock },
+    { key: 'vat', label: 'VAT Return', icon: Receipt },
   ];
 
   return (
@@ -217,8 +225,8 @@ export default function Reports() {
                       <td className="px-4 py-3 text-gray-500">{p.category?.name}</td>
                       <td className="px-4 py-3 font-bold">{p.currentStock} <span className="text-gray-400 font-normal text-xs">{p.unit}</span></td>
                       <td className="px-4 py-3 text-gray-400">{p.minStock}</td>
-                      <td className="px-4 py-3">QAR {p.costPrice?.toFixed(2)}</td>
-                      <td className="px-4 py-3">QAR {p.sellingPrice?.toFixed(2)}</td>
+                      <td className="px-4 py-3">SAR {p.costPrice?.toFixed(2)}</td>
+                      <td className="px-4 py-3">SAR {p.sellingPrice?.toFixed(2)}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${p.currentStock === 0 ? 'bg-red-100 text-red-700' : p.currentStock <= p.minStock ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                           {p.currentStock === 0 ? 'Out of Stock' : p.currentStock <= p.minStock ? 'Low Stock' : 'OK'}
@@ -399,6 +407,56 @@ export default function Reports() {
           ))}
         </div>
       )}
+      {/* VAT return — the figures filed with ZATCA */}
+      {tab === 'vat' && vat && (
+        <div className="space-y-5">
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-gray-900">VAT Return Summary</h3>
+              <span className="text-xs text-gray-400">{vat.period?.from} → {vat.period?.to}</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-5">
+              Output VAT on sales for the period. Returns are filed monthly when annual supplies exceed SAR 40 million, otherwise quarterly.
+            </p>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Standard-rated sales (15%)', value: vat.sales?.standardRatedTaxable, tone: 'text-gray-900' },
+                { label: 'Output VAT', value: vat.sales?.standardRatedVat, tone: 'text-[#1F6F4A]' },
+                { label: 'Zero-rated sales', value: vat.sales?.zeroRated, tone: 'text-gray-900' },
+                { label: 'Exempt sales', value: vat.sales?.exempt, tone: 'text-gray-900' },
+              ].map(({ label, value, tone }) => (
+                <div key={label} className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-1">{label}</p>
+                  <p className={`text-xl font-bold ${tone}`}>{fmt(value || 0)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="border border-gray-100 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">Total supplies</span><span className="font-medium">{fmt(vat.sales?.totalSupplies || 0)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Credit notes (net)</span><span className="font-medium">{fmt(vat.creditNotes?.taxable || 0)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Credit note VAT</span><span className="font-medium">{fmt(vat.creditNotes?.vat || 0)}</span></div>
+                <div className="flex justify-between pt-2 border-t border-gray-100">
+                  <span className="font-semibold text-gray-700">VAT payable</span>
+                  <span className="font-bold text-[#1F6F4A] text-lg">{fmt(vat.vatPayable || 0)}</span>
+                </div>
+              </div>
+              <div className="border border-gray-100 rounded-xl p-4 space-y-2 text-sm">
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Documents issued</p>
+                <div className="flex justify-between"><span className="text-gray-500">Standard tax invoices</span><span className="font-medium">{vat.invoiceCounts?.standard ?? 0}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Simplified tax invoices</span><span className="font-medium">{vat.invoiceCounts?.simplified ?? 0}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Credit notes</span><span className="font-medium">{vat.invoiceCounts?.creditNotes ?? 0}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Debit notes</span><span className="font-medium">{vat.invoiceCounts?.debitNotes ?? 0}</span></div>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 mt-4">{vat.retentionNote}</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

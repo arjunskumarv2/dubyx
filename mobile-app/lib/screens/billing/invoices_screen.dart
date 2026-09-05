@@ -88,7 +88,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                 child: Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(inv.customerName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                    Text('Balance Due: QAR ${fmt.format(inv.balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('Balance Due: SAR ${fmt.format(inv.balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
                   ])),
                 ]),
               ),
@@ -101,7 +101,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                 decoration: InputDecoration(
-                  prefixText: 'QAR ',
+                  prefixText: 'SAR ',
                   filled: true,
                   fillColor: AppTheme.background,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -193,7 +193,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                       });
                       if (mounted) Navigator.pop(ctx);
                       messenger.showSnackBar(SnackBar(
-                        content: Text('QAR ${fmt.format(amt)} collected'),
+                        content: Text('SAR ${fmt.format(amt)} collected'),
                         backgroundColor: AppTheme.success,
                       ));
                       if (mounted) _load();
@@ -343,7 +343,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                             ),
                             const SizedBox(height: 4),
                             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                              Text('Paid: QAR ${fmt.format(inv.paidAmount)}', style: const TextStyle(fontSize: 10, color: AppTheme.success)),
+                              Text('Paid: SAR ${fmt.format(inv.paidAmount)}', style: const TextStyle(fontSize: 10, color: AppTheme.success)),
                               Text('${((inv.paidAmount / inv.total) * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
                             ]),
                           ],
@@ -352,12 +352,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                           Row(children: [
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               const Text('Total', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                              Text('QAR ${fmt.format(inv.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppTheme.textDark)),
+                              Text('SAR ${fmt.format(inv.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppTheme.textDark)),
                             ])),
                             if (!inv.isPaid && inv.balance > 0) ...[
                               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                                 const Text('Balance', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                Text('QAR ${fmt.format(inv.balance)}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: statusColor)),
+                                Text('SAR ${fmt.format(inv.balance)}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: statusColor)),
                               ]),
                               const SizedBox(width: 8),
                             ],

@@ -322,3 +322,83 @@ export const getAgingReport = async (_req: Request, res: Response) => {
   res.json({ buckets, totals, grandTotal });
 };
 
+
+/**
+ * VAT return summary — the figures a Saudi taxpayer files with ZATCA for a
+ * period: standard-rated sales and output VAT, zero-rated and exempt supplies,
+ * and the credit notes that reduce them.
+ *
+ * VAT returns are filed monthly by taxpayers with annual supplies above
+ * SAR 40 million, quarterly otherwise.
+ */
+export const getVatReturn = async (req: Request, res: Response) => {
+  const { from, to } = req.query;
+  const start = from ? new Date(from as string) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const end = to ? new Date(`${to}T23:59:59.999Z`) : new Date();
+
+  const invoices = await prisma.invoice.findMany({
+    where: { createdAt: { gte: start, lte: end } },
+    include: {
+      customer: { select: { shopName: true, vatNumber: true } },
+      order: { include: { items: { include: { product: { select: { name: true, vatCategory: true, taxRate: true } } } } } },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const bucket = { standardTaxable: 0, standardVat: 0, zeroRated: 0, exempt: 0 };
+  let creditNoteTaxable = 0;
+  let creditNoteVat = 0;
+
+  for (const inv of invoices) {
+    const sign = inv.invoiceKind === 'CREDIT_NOTE' ? -1 : 1;
+
+    if (inv.invoiceKind === 'CREDIT_NOTE') {
+      creditNoteTaxable += inv.subtotal;
+      creditNoteVat += inv.taxAmount;
+    }
+
+    const items = inv.order?.items || [];
+    if (items.length === 0) {
+      // Notes without their own order are treated as standard-rated adjustments
+      bucket.standardTaxable += sign * inv.subtotal;
+      bucket.standardVat += sign * inv.taxAmount;
+      continue;
+    }
+
+    for (const item of items) {
+      const category = item.product?.vatCategory || 'STANDARD';
+      const lineTotal = item.price * item.quantity - (item.discount || 0);
+      if (category === 'ZERO_RATED') bucket.zeroRated += sign * lineTotal;
+      else if (category === 'EXEMPT') bucket.exempt += sign * lineTotal;
+      else {
+        bucket.standardTaxable += sign * lineTotal;
+        bucket.standardVat += sign * (lineTotal * (item.taxRate || 0) / 100);
+      }
+    }
+  }
+
+  const r2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
+
+  res.json({
+    period: { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) },
+    sales: {
+      standardRatedTaxable: r2(bucket.standardTaxable),
+      standardRatedVat: r2(bucket.standardVat),
+      zeroRated: r2(bucket.zeroRated),
+      exempt: r2(bucket.exempt),
+      totalSupplies: r2(bucket.standardTaxable + bucket.zeroRated + bucket.exempt),
+    },
+    // Output VAT less the VAT credited back — the payable line of the return
+    outputVat: r2(bucket.standardVat),
+    creditNotes: { taxable: r2(creditNoteTaxable), vat: r2(creditNoteVat) },
+    vatPayable: r2(bucket.standardVat),
+    invoiceCounts: {
+      standard: invoices.filter(i => i.invoiceType === 'STANDARD' && i.invoiceKind === 'INVOICE').length,
+      simplified: invoices.filter(i => i.invoiceType === 'SIMPLIFIED' && i.invoiceKind === 'INVOICE').length,
+      creditNotes: invoices.filter(i => i.invoiceKind === 'CREDIT_NOTE').length,
+      debitNotes: invoices.filter(i => i.invoiceKind === 'DEBIT_NOTE').length,
+    },
+    // ZATCA requires invoices to be retained for 6 years
+    retentionNote: 'Tax invoices must be retained for 6 years from the end of the tax period (Article 66, VAT Implementing Regulations).',
+  });
+};

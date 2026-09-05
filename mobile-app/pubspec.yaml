@@ -27,6 +27,7 @@ dependencies:
 
   # PDF Generation
   pdf: ^3.10.8
+  barcode: ^2.2.9
   printing: ^5.12.0
 
   # Camera & Image
@@ -69,6 +70,11 @@ flutter:
     - assets/icons/
 
   fonts:
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-Regular.ttf

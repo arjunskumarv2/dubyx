@@ -108,7 +108,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         Text('${p.sku} • ${p.categoryName ?? ''}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
                         const SizedBox(height: 4),
                         Row(children: [
-                          Text('QAR ${p.sellingPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 13)),
+                          Text('SAR ${p.sellingPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 13)),
                           if (p.taxRate > 0) Text(' +${p.taxRate.toStringAsFixed(0)}% VAT', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
                         ]),
                       ])),

@@ -81,7 +81,7 @@ export default function Customers() {
             <div className="space-y-1.5 text-sm text-gray-600">
               <div className="flex items-center gap-2"><Phone size={13} className="text-[#8D1B3D]" />{c.phone}</div>
               <div className="flex items-center gap-2"><MapPin size={13} className="text-[#8D1B3D]" />{c.area}{c.route ? ` — ${c.route}` : ''}</div>
-              <div className="flex items-center gap-2"><CreditCard size={13} className="text-[#8D1B3D]" />Credit: QAR {c.creditLimit?.toFixed(0)}</div>
+              <div className="flex items-center gap-2"><CreditCard size={13} className="text-[#8D1B3D]" />Credit: SAR {c.creditLimit?.toFixed(0)}</div>
             </div>
           </div>
         ))}
@@ -107,8 +107,18 @@ export default function Customers() {
                 { label: 'Address *', key: 'address', type: 'text' },
                 { label: 'Area *', key: 'area', type: 'text' },
                 { label: 'Route', key: 'route', type: 'text' },
-                { label: 'Credit Limit (QAR)', key: 'creditLimit', type: 'number' },
-                { label: 'Tax/VAT Number', key: 'taxNumber', type: 'text' },
+                { label: 'Credit Limit (SAR)', key: 'creditLimit', type: 'number' },
+                // Saudi identifiers — a valid VAT number makes this a standard
+                // (rather than simplified) tax invoice customer under ZATCA rules
+                { label: 'VAT Number (15 digits, 3…3)', key: 'vatNumber', type: 'text' },
+                { label: 'Commercial Registration (10 digits)', key: 'crNumber', type: 'text' },
+                // Saudi National Address
+                { label: 'Building Number (4 digits)', key: 'buildingNumber', type: 'text' },
+                { label: 'Street', key: 'street', type: 'text' },
+                { label: 'District', key: 'district', type: 'text' },
+                { label: 'City', key: 'city', type: 'text' },
+                { label: 'Postal Code (5 digits)', key: 'postalCode', type: 'text' },
+                { label: 'Additional Number (4 digits)', key: 'additionalNumber', type: 'text' },
               ].map(({ label, key, type }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -145,7 +155,7 @@ export default function Customers() {
                 <div><p className="text-gray-400">Phone</p><p className="font-semibold">{selected.phone}</p></div>
                 <div><p className="text-gray-400">Area</p><p className="font-semibold">{selected.area}</p></div>
                 <div><p className="text-gray-400">Route</p><p className="font-semibold">{selected.route || '-'}</p></div>
-                <div><p className="text-gray-400">Credit Limit</p><p className="font-semibold">QAR {selected.creditLimit}</p></div>
+                <div><p className="text-gray-400">Credit Limit</p><p className="font-semibold">SAR {selected.creditLimit}</p></div>
                 <div><p className="text-gray-400">Tax Number</p><p className="font-semibold">{selected.taxNumber || '-'}</p></div>
               </div>
 
@@ -157,7 +167,7 @@ export default function Customers() {
                       <div key={o.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 text-sm">
                         <span className="font-mono text-[#8D1B3D]">{o.orderNumber}</span>
                         <span className="text-gray-500">{new Date(o.createdAt).toLocaleDateString()}</span>
-                        <span className="font-semibold">QAR {o.total?.toFixed(2)}</span>
+                        <span className="font-semibold">SAR {o.total?.toFixed(2)}</span>
                         <span className={`badge-${o.status.toLowerCase()}`}>{o.status}</span>
                       </div>
                     ))}

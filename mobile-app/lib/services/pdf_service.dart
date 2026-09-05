@@ -1,3 +1,5 @@
+import 'package:barcode/barcode.dart' as bc;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
@@ -9,6 +11,7 @@ class PdfService {
   factory PdfService() => _instance;
   PdfService._internal();
 
+  static const _green = PdfColor.fromInt(0xFF1F6F4A); // Saudi flag green
   static const _maroon = PdfColor.fromInt(0xFF8D1B3D);
   static const _gold = PdfColor.fromInt(0xFFC9A84C);
   static const _gray = PdfColor.fromInt(0xFF6B7280);
@@ -17,25 +20,57 @@ class PdfService {
 
   // Strip non-ASCII chars — PDF Type1 fonts are Latin-1 only; Arabic glyphs render blank
   String _safeCurrency(String? sym) {
-    if (sym == null || sym.isEmpty) return 'QAR';
+    if (sym == null || sym.isEmpty) return 'SAR';
     final ascii = sym.replaceAll(RegExp(r'[^\x00-\x7F]'), '').trim();
-    return ascii.isEmpty ? 'QAR' : ascii;
+    return ascii.isEmpty ? 'SAR' : ascii;
   }
 
   String _fmt(NumberFormat fmt, num? value) => fmt.format(value ?? 0);
+
+  pw.Font? _arabicFont;
+  pw.Font? _arabicBold;
+
+  /// Arabic is mandatory on a Saudi tax invoice, and PDF core fonts cannot
+  /// render it — Amiri is bundled with the app and loaded once.
+  Future<void> _loadArabicFonts() async {
+    if (_arabicFont != null) return;
+    try {
+      _arabicFont = pw.Font.ttf(await rootBundle.load('assets/fonts/Amiri-Regular.ttf'));
+      _arabicBold = pw.Font.ttf(await rootBundle.load('assets/fonts/Amiri-Bold.ttf'));
+    } catch (_) {
+      // Font missing — the invoice still prints, in English only
+    }
+  }
+
+  pw.Widget _ar(String text, {double size = 9, bool bold = false, PdfColor color = PdfColors.black}) {
+    if (_arabicFont == null) return pw.SizedBox();
+    return pw.Directionality(
+      textDirection: pw.TextDirection.rtl,
+      child: pw.Text(text, style: pw.TextStyle(
+        font: bold ? _arabicBold : _arabicFont,
+        fontSize: size, color: color,
+        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+      )),
+    );
+  }
 
   Future<List<int>> generateInvoicePdf({
     required Invoice invoice,
     required List<OrderItem> items,
     Map<String, String>? settings,
   }) async {
+    await _loadArabicFonts();
+
     final doc = pw.Document();
-    final currency = _safeCurrency(settings?['currency_symbol']);
-    final companyName = settings?['company_name'] ?? 'Dubyx Trading LLC';
-    final companyAddress = settings?['company_address'] ?? 'Doha, Qatar';
+    final currency = _safeCurrency(settings?['currency']);
+    final companyName = settings?['company_name'] ?? 'Dubyx Trading Est.';
+    final companyNameAr = settings?['company_name_ar'] ?? '';
+    final companyAddress = settings?['company_address'] ?? 'Riyadh, Saudi Arabia';
     final companyPhone = settings?['company_phone'] ?? '';
     final companyEmail = settings?['company_email'] ?? '';
-    final trn = settings?['company_trn'] ?? '';
+    final sellerVat = settings?['company_vat_number'] ?? '';
+    final sellerCr = settings?['company_cr_number'] ?? '';
+    final vatRate = settings?['default_tax_rate'] ?? '15';
     // Force 'en' locale — device Arabic locale would emit non-ASCII numerals that PDF Type1 fonts can't render
     final fmt = NumberFormat('#,##0.00', 'en');
 
@@ -48,20 +83,26 @@ class PdfService {
           // Header
           pw.Container(
             padding: const pw.EdgeInsets.all(20),
-            decoration: const pw.BoxDecoration(color: _maroon, borderRadius: pw.BorderRadius.all(pw.Radius.circular(12))),
+            decoration: const pw.BoxDecoration(color: _green, borderRadius: pw.BorderRadius.all(pw.Radius.circular(12))),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                   pw.Text(companyName, style: pw.TextStyle(color: PdfColors.white, fontSize: 22, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 4),
+                  if (companyNameAr.isNotEmpty) _ar(companyNameAr, size: 12, bold: true, color: PdfColors.white),
                   pw.Text(companyAddress, style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
                   pw.Text('$companyPhone  |  $companyEmail', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
-                  if (trn.isNotEmpty) pw.Text('TRN: $trn', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
+                  if (sellerVat.isNotEmpty) pw.Text('VAT No: $sellerVat', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
+                  if (sellerCr.isNotEmpty) pw.Text('CR No: $sellerCr', style: const pw.TextStyle(color: _whiteLight, fontSize: 9)),
                 ]),
                 pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-                  pw.Text('INVOICE', style: pw.TextStyle(color: _gold, fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(invoice.titleEn, style: pw.TextStyle(color: _gold, fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                  _ar(invoice.titleAr, size: 14, bold: true, color: PdfColors.white),
+                  pw.SizedBox(height: 2),
                   pw.Text(invoice.invoiceNumber, style: const pw.TextStyle(color: PdfColors.white, fontSize: 11)),
+                  if (invoice.uuid != null)
+                    pw.Text('UUID: ${invoice.uuid}', style: const pw.TextStyle(color: _whiteLight, fontSize: 6)),
                 ]),
               ],
             ),
@@ -76,8 +117,8 @@ class PdfService {
               pw.Text(invoice.customerName, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
               pw.Text(invoice.customerPhone, style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
               pw.Text(invoice.customerAddress, style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
-              if (invoice.customerTaxNumber != null)
-                pw.Text('TRN: ${invoice.customerTaxNumber}', style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+              if (invoice.customerVatNumber != null)
+                pw.Text('VAT No: ${invoice.customerVatNumber}', style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
             ])),
             pw.SizedBox(width: 40),
             pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
@@ -99,8 +140,8 @@ class PdfService {
             },
             children: [
               pw.TableRow(
-                decoration: const pw.BoxDecoration(color: _maroon),
-                children: ['Description', 'Qty', 'Unit Price', 'Tax', 'Total'].map((h) =>
+                decoration: const pw.BoxDecoration(color: _green),
+                children: ['Description', 'Qty', 'Unit Price', 'VAT %', 'Total'].map((h) =>
                   pw.Padding(padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: pw.Text(h, style: pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold),
                       textAlign: h == 'Description' ? pw.TextAlign.left : pw.TextAlign.right)),
@@ -127,12 +168,12 @@ class PdfService {
           // Totals
           pw.Row(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
             pw.SizedBox(width: 200, child: pw.Column(children: [
-              _totalRow('Subtotal:', '$currency ${_fmt(fmt, invoice.subtotal)}'),
-              _totalRow('Tax:', '$currency ${_fmt(fmt, invoice.taxAmount)}'),
+              _totalRow('Total (excl. VAT):', '$currency ${_fmt(fmt, invoice.subtotal)}'),
+              _totalRow('VAT ($vatRate%):', '$currency ${_fmt(fmt, invoice.taxAmount)}'),
               if (invoice.discount > 0)
                 _totalRow('Discount (${invoice.discount.toStringAsFixed(0)}%):', '-$currency ${_fmt(fmt, invoice.subtotal * invoice.discount / 100)}'),
-              pw.Divider(color: _maroon),
-              _totalRow('TOTAL:', '$currency ${_fmt(fmt, invoice.total)}', bold: true),
+              pw.Divider(color: _green),
+              _totalRow('Total (incl. VAT):', '$currency ${_fmt(fmt, invoice.total)}', bold: true),
               if (invoice.paidAmount > 0) ...[
                 _totalRow('Paid:', '$currency ${_fmt(fmt, invoice.paidAmount)}'),
                 _totalRow('Balance Due:', '$currency ${_fmt(fmt, invoice.balance)}', bold: true),
@@ -140,10 +181,34 @@ class PdfService {
             ])),
           ]),
 
-          if (invoice.notes != null) ...[
+          if (invoice.isNote && invoice.noteReason != null) ...[
+            pw.SizedBox(height: 16),
+            pw.Text('Reason for issue:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
+            pw.Text(invoice.noteReason!, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+          ] else if (invoice.notes != null) ...[
             pw.SizedBox(height: 16),
             pw.Text('Notes:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
             pw.Text(invoice.notes!, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+          ],
+
+          // ZATCA QR code — the Base64 TLV payload issued with the invoice
+          if (invoice.qrCode != null && invoice.qrCode!.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            pw.Row(children: [
+              pw.BarcodeWidget(
+                barcode: bc.Barcode.qrCode(errorCorrectLevel: bc.BarcodeQRCorrectionLevel.medium),
+                data: invoice.qrCode!,
+                width: 80,
+                height: 80,
+                drawText: false,
+              ),
+              pw.SizedBox(width: 10),
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('Scan to verify — ZATCA e-invoice',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                _ar('امسح للتحقق من الفاتورة', size: 8, color: PdfColors.grey600),
+              ]),
+            ]),
           ],
 
           pw.Spacer(),
@@ -151,9 +216,14 @@ class PdfService {
           // Footer
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
-            decoration: const pw.BoxDecoration(color: _maroon, borderRadius: pw.BorderRadius.all(pw.Radius.circular(8))),
-            child: pw.Center(child: pw.Text('Thank you for your business! | $companyName | Doha, Qatar',
-              style: const pw.TextStyle(color: _whiteLight, fontSize: 9))),
+            decoration: const pw.BoxDecoration(color: _green, borderRadius: pw.BorderRadius.all(pw.Radius.circular(8))),
+            child: pw.Column(children: [
+              pw.Text('$companyName  |  VAT $sellerVat  |  $companyAddress',
+                  style: const pw.TextStyle(color: _whiteLight, fontSize: 8)),
+              pw.SizedBox(height: 2),
+              pw.Text('Electronically generated tax invoice issued under the KSA VAT Law and ZATCA e-invoicing regulations.',
+                  style: const pw.TextStyle(color: _whiteLight, fontSize: 6)),
+            ]),
           ),
         ],
       ),

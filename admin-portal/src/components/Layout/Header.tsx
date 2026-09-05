@@ -25,7 +25,7 @@ export default function Header() {
       <div>
         <h2 className="text-xl font-bold text-gray-900">{title}</h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          {new Date().toLocaleDateString('en-QA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date().toLocaleDateString('en-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as zatca from '../services/zatca.service';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth';
 import { OrderStatus } from '@prisma/client';
@@ -97,10 +98,11 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
 
     const itemDiscount = item.discount || 0;
     const price = product.sellingPrice;
-    const taxRate = product.taxRate;
-    const lineSubtotal = price * item.quantity * (1 - itemDiscount / 100);
-    const lineTax = lineSubtotal * (taxRate / 100);
-    const total = lineSubtotal + lineTax;
+    // Zero-rated and exempt supplies never carry VAT, whatever the product rate says
+    const taxRate = zatca.effectiveVatRate(product.vatCategory as zatca.VatCategory, product.taxRate);
+    const lineSubtotal = zatca.round2(price * item.quantity * (1 - itemDiscount / 100));
+    const lineTax = zatca.round2(lineSubtotal * (taxRate / 100));
+    const total = zatca.round2(lineSubtotal + lineTax);
 
     subtotal += lineSubtotal;
     taxAmount += lineTax;
@@ -121,7 +123,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     const outstandingBalance = (outstanding._sum.total ?? 0) - (outstanding._sum.paidAmount ?? 0);
     if (outstandingBalance + total > customer.creditLimit) {
       return res.status(400).json({
-        message: `Credit limit exceeded. Limit: QAR ${customer.creditLimit.toFixed(2)}, Outstanding: QAR ${outstandingBalance.toFixed(2)}, This order: QAR ${total.toFixed(2)}`,
+        message: `Credit limit exceeded. Limit: SAR ${customer.creditLimit.toFixed(2)}, Outstanding: SAR ${outstandingBalance.toFixed(2)}, This order: SAR ${total.toFixed(2)}`,
         creditLimit: customer.creditLimit,
         outstanding: outstandingBalance,
         orderTotal: total,

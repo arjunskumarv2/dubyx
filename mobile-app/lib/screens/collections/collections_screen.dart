@@ -92,7 +92,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                   const SizedBox(width: 8),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(inv['customer']?['shopName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                    Text('Balance Due: QAR ${fmt.format(balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('Balance Due: SAR ${fmt.format(balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
                   ])),
                 ]),
               ),
@@ -106,7 +106,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                 decoration: InputDecoration(
-                  prefixText: 'QAR ',
+                  prefixText: 'SAR ',
                   hintText: '0.00',
                   filled: true,
                   fillColor: AppTheme.background,
@@ -209,7 +209,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                       });
                       if (mounted) Navigator.pop(ctx);
                       messenger.showSnackBar(
-                        SnackBar(content: Text('QAR ${fmt.format(amt)} collected successfully'), backgroundColor: AppTheme.success),
+                        SnackBar(content: Text('SAR ${fmt.format(amt)} collected successfully'), backgroundColor: AppTheme.success),
                       );
                       if (mounted) _load();
                     } catch (e) {
@@ -299,7 +299,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Today\'s Collections', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
-                  Text('QAR ${fmt.format(_todayData!['total'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.success)),
+                  Text('SAR ${fmt.format(_todayData!['total'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.success)),
                 ]),
                 const Spacer(),
                 Text('${_todayData!['count'] ?? 0} txns', style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
@@ -355,8 +355,8 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                             const SizedBox(height: 8),
                             if (status == 'PARTIAL') ...[
                               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                                Text('Total: QAR ${fmt.format(inv['total'])}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                Text('Paid: QAR ${fmt.format(inv['paidAmount'])}', style: const TextStyle(fontSize: 11, color: AppTheme.success)),
+                                Text('Total: SAR ${fmt.format(inv['total'])}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                Text('Paid: SAR ${fmt.format(inv['paidAmount'])}', style: const TextStyle(fontSize: 11, color: AppTheme.success)),
                               ]),
                               const SizedBox(height: 4),
                               LinearProgressIndicator(
@@ -371,7 +371,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 const Text('Balance Due', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                Text('QAR ${fmt.format(balance)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: statusColor)),
+                                Text('SAR ${fmt.format(balance)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: statusColor)),
                               ]),
                               ElevatedButton.icon(
                                 onPressed: () => _showCollectModal(inv),
@@ -406,7 +406,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> with SingleTicker
                           title: Text(c['customer']?['shopName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                           subtitle: Text('${c['collectedBy']?['name'] ?? ''} • ${(c['method'] as String).replaceAll('_', ' ')}', style: const TextStyle(fontSize: 11)),
                           trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text('QAR ${fmt.format((c['amount'] as num))}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.success)),
+                            Text('SAR ${fmt.format((c['amount'] as num))}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.success)),
                             Text(DateFormat('dd MMM').format(DateTime.parse(c['collectedAt'])), style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
                           ]),
                         ),

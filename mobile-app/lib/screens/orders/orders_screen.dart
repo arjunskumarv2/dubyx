@@ -89,7 +89,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     const SizedBox(width: 8),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(customerName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                      Text('Balance: QAR ${fmt.format(balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('Balance: SAR ${fmt.format(balance)}', style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
                     ])),
                   ]),
                 ),
@@ -103,7 +103,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   decoration: InputDecoration(
-                    prefixText: 'QAR ',
+                    prefixText: 'SAR ',
                     filled: true,
                     fillColor: AppTheme.background,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -177,7 +177,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           if (refCtrl.text.isNotEmpty) 'reference': refCtrl.text,
                         });
                         if (ctx.mounted) Navigator.pop(ctx);
-                        messenger.showSnackBar(SnackBar(content: Text('QAR ${fmt.format(amt)} collected'), backgroundColor: AppTheme.success));
+                        messenger.showSnackBar(SnackBar(content: Text('SAR ${fmt.format(amt)} collected'), backgroundColor: AppTheme.success));
                         if (mounted) _load();
                       } catch (e) {
                         setModal(() => collecting = false);
@@ -329,9 +329,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         const SizedBox(height: 10),
                         Row(children: [
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('QAR ${fmt.format(order.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textDark)),
+                            Text('SAR ${fmt.format(order.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textDark)),
                             if (canCollect)
-                              Text('Balance: QAR ${fmt.format(inv.balance)}', style: TextStyle(fontSize: 11, color: _payStatusColor(inv.paymentStatus), fontWeight: FontWeight.w600)),
+                              Text('Balance: SAR ${fmt.format(inv.balance)}', style: TextStyle(fontSize: 11, color: _payStatusColor(inv.paymentStatus), fontWeight: FontWeight.w600)),
                           ])),
 
                           // Action buttons

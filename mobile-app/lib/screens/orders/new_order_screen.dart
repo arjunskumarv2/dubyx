@@ -183,7 +183,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
 
                 const Text('Collect Payment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('Total: QAR ${fmt.format(total)}', style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
+                Text('Total: SAR ${fmt.format(total)}', style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
                 const SizedBox(height: 16),
 
                 TextField(
@@ -192,7 +192,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                   decoration: InputDecoration(
-                    prefixText: 'QAR ',
+                    prefixText: 'SAR ',
                     filled: true, fillColor: AppTheme.background,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -268,7 +268,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                           if (refCtrl.text.isNotEmpty) 'reference': refCtrl.text,
                         });
                         if (ctx.mounted) Navigator.pop(ctx);
-                        messenger.showSnackBar(SnackBar(content: Text('QAR ${fmt.format(amt)} collected!'), backgroundColor: AppTheme.success));
+                        messenger.showSnackBar(SnackBar(content: Text('SAR ${fmt.format(amt)} collected!'), backgroundColor: AppTheme.success));
                       } catch (e) {
                         setModal(() => collecting = false);
                         messenger.showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.error));
@@ -400,7 +400,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           child: ListTile(
             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             subtitle: Text(
-              '${p.sku} • QAR ${p.sellingPrice.toStringAsFixed(2)} • ${_hasVanLoad ? 'Van: $availableQty' : '$availableQty'} ${p.unit}',
+              '${p.sku} • SAR ${p.sellingPrice.toStringAsFixed(2)} • ${_hasVanLoad ? 'Van: $availableQty' : '$availableQty'} ${p.unit}',
               style: TextStyle(fontSize: 11, color: availableQty == 0 ? AppTheme.error : AppTheme.textGray),
             ),
             enabled: availableQty > 0,
@@ -461,7 +461,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       Container(
         padding: const EdgeInsets.all(16),
         color: AppTheme.primary.withValues(alpha: 0.05),
-        child: Text('${_cart.length} products • QAR ${_total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primary)),
+        child: Text('${_cart.length} products • SAR ${_total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primary)),
       ),
   ]);
 
@@ -487,9 +487,9 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            Text('${item.quantity} × QAR ${item.product.sellingPrice.toStringAsFixed(2)}', style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
+            Text('${item.quantity} × SAR ${item.product.sellingPrice.toStringAsFixed(2)}', style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
           ])),
-          Text('QAR ${item.lineTotal.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary)),
+          Text('SAR ${item.lineTotal.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary)),
         ]),
       )),
 
@@ -498,17 +498,17 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         child: Column(children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Subtotal', style: TextStyle(color: AppTheme.textGray)),
-            Text('QAR ${_subtotal.toStringAsFixed(2)}'),
+            Text('SAR ${_subtotal.toStringAsFixed(2)}'),
           ]),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Tax', style: TextStyle(color: AppTheme.textGray)),
-            Text('QAR ${_taxTotal.toStringAsFixed(2)}'),
+            Text('SAR ${_taxTotal.toStringAsFixed(2)}'),
           ]),
           const Divider(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            Text('QAR ${_total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.primary)),
+            Text('SAR ${_total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.primary)),
           ]),
         ])),
 
