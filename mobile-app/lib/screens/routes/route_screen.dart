@@ -18,6 +18,7 @@ class _RouteScreenState extends State<RouteScreen> {
   final _api = ApiService();
   List<dynamic> _routes = [];
   Map<String, dynamic>? _attendance;
+  Map<String, dynamic>? _journeyToday;
   bool _loading = true;
   bool _checkingIn = false;
   bool _checkingOut = false;
@@ -33,11 +34,14 @@ class _RouteScreenState extends State<RouteScreen> {
       final results = await Future.wait([
         _api.get('/routes'),
         _api.get('/attendance/today'),
+        // Journey summary is optional — never block the route list on it.
+        _api.get('/journeys/today').catchError((_) => null),
       ]);
       if (mounted) {
         setState(() {
           _routes = results[0] as List;
           _attendance = results[1] as Map<String, dynamic>?;
+          _journeyToday = results[2] as Map<String, dynamic>?;
           _loading = false;
         });
       }
@@ -285,6 +289,63 @@ class _RouteScreenState extends State<RouteScreen> {
     );
   }
 
+  Widget _buildJourneyCard() {
+    final hasPlan = _journeyToday?['hasPlanToday'] == true;
+    final route = _journeyToday?['plannedRoute'] as Map<String, dynamic>?;
+    final journeys = (_journeyToday?['journeys'] as List?) ?? [];
+    final active = journeys.any((j) => j['status'] == 'IN_PROGRESS');
+    final dayName = _journeyToday?['dayName'] ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: GestureDetector(
+        onTap: () async {
+          await Navigator.pushNamed(context, '/journey');
+          if (mounted) _loadAll();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: hasPlan ? AppTheme.primary.withValues(alpha: 0.25) : const Color(0xFFF0F0F0)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: (hasPlan ? AppTheme.primary : AppTheme.textGray).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Iconsax.calendar_1, size: 20, color: hasPlan ? AppTheme.primary : AppTheme.textGray),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Text("Today's Journey", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                if (active) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(20)),
+                    child: const Text('RUNNING', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ]),
+              Text(
+                hasPlan
+                  ? '$dayName • ${route?['name'] ?? ''} (${(route?['stops'] as List?)?.length ?? 0} shops)'
+                  : '$dayName • No route planned — tap for an emergency visit',
+                style: const TextStyle(color: AppTheme.textGray, fontSize: 11),
+              ),
+            ])),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.textGray),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Widget _statItem(String label, String value) => Column(children: [
     Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
     Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10)),
@@ -300,7 +361,19 @@ class _RouteScreenState extends State<RouteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(title: const Text('My Routes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+      appBar: AppBar(
+        title: const Text('My Routes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            tooltip: 'My Journey',
+            icon: const Icon(Iconsax.calendar_1, color: Colors.white),
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/journey');
+              if (mounted) _loadAll();
+            },
+          ),
+        ],
+      ),
       body: _loading
         ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
         : RefreshIndicator(
@@ -309,6 +382,7 @@ class _RouteScreenState extends State<RouteScreen> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: _buildAttendanceCard()),
+              SliverToBoxAdapter(child: _buildJourneyCard()),
               if (_routes.isEmpty)
                 SliverFillRemaining(
                   child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

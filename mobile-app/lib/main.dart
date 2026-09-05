@@ -12,6 +12,7 @@ import 'screens/billing/invoices_screen.dart';
 import 'screens/collections/collections_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/routes/route_screen.dart';
+import 'screens/journey/journey_screen.dart';
 import 'screens/van/van_stock_screen.dart';
 import 'screens/van/stock_request_screen.dart';
 import 'theme/app_theme.dart';
@@ -47,6 +48,7 @@ class DubYxApp extends StatelessWidget {
           '/invoices': (_) => const InvoicesScreen(),
           '/collections': (_) => const CollectionsScreen(),
           '/inventory': (_) => const InventoryScreen(),
+          '/journey': (_) => const JourneyScreen(),
           '/van-stock': (_) => const VanStockScreen(),
           '/stock-request': (_) => const StockRequestScreen(),
         },

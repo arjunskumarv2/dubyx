@@ -19,6 +19,7 @@ import * as vanCtrl from '../controllers/van.controller';
 import * as vehicleCtrl from '../controllers/vehicle.controller';
 import * as stockRequestCtrl from '../controllers/stockRequest.controller';
 import * as attendanceCtrl from '../controllers/attendance.controller';
+import * as journeyCtrl from '../controllers/journey.controller';
 
 const router = Router();
 
@@ -114,6 +115,25 @@ router.put('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), rou
 router.delete('/routes/:id', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.deleteRoute);
 router.post('/checkins', authenticate, routeCtrl.uploadSelfie.single('selfie'), routeCtrl.checkIn);
 router.get('/checkins', authenticate, authorize(...adminRoles, 'MANAGER'), routeCtrl.getCheckIns);
+
+// Journey Plans (weekly route schedule per salesman)
+router.get('/journey-plans', authenticate, journeyCtrl.getJourneyPlans);
+router.get('/journey-plans/:id', authenticate, journeyCtrl.getJourneyPlan);
+router.post('/journey-plans', authenticate, authorize(...adminRoles, 'MANAGER'), journeyCtrl.createJourneyPlan);
+router.put('/journey-plans/:id', authenticate, authorize(...adminRoles, 'MANAGER'), journeyCtrl.updateJourneyPlan);
+router.delete('/journey-plans/:id', authenticate, authorize(...adminRoles, 'MANAGER'), journeyCtrl.deleteJourneyPlan);
+
+// Journeys (daily trips — planned from the weekly plan, or unplanned/emergency)
+router.get('/journeys/today', authenticate, journeyCtrl.getTodayJourney);
+router.get('/journeys/board', authenticate, authorize(...adminRoles, 'MANAGER'), journeyCtrl.getJourneyBoard);
+router.get('/journeys', authenticate, journeyCtrl.getJourneys);
+router.get('/journeys/:id', authenticate, journeyCtrl.getJourney);
+router.post('/journeys/start', authenticate, journeyCtrl.startPlannedJourney);
+router.post('/journeys/emergency', authenticate, journeyCtrl.createEmergencyJourney);
+router.post('/journeys/:id/stops', authenticate, journeyCtrl.addJourneyStop);
+router.patch('/journeys/:id/stops/:stopId', authenticate, journeyCtrl.updateJourneyStop);
+router.post('/journeys/:id/complete', authenticate, journeyCtrl.completeJourney);
+router.post('/journeys/:id/cancel', authenticate, journeyCtrl.cancelJourney);
 
 // Vehicles
 router.get('/vehicles', authenticate, vehicleCtrl.getVehicles);
