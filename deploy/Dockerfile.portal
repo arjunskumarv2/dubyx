@@ -1,0 +1,13 @@
+# Admin portal — built against the API URL this box will serve
+FROM node:20-alpine AS build
+WORKDIR /app
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+COPY admin-portal/package*.json ./
+RUN npm install
+COPY admin-portal/ ./
+RUN npm run build
+
+# scratch keeps the export to just the built files
+FROM scratch AS export
+COPY --from=build /app/dist /

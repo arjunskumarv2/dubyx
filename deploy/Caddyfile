@@ -1,0 +1,26 @@
+# Caddy obtains and renews a Let's Encrypt certificate automatically.
+# The mobile app talks HTTPS, so a real domain pointed at this host is required.
+{$DOMAIN} {
+	encode gzip
+
+	# API and uploaded files go to the Node service
+	handle /api/* {
+		reverse_proxy api:5000
+	}
+	handle /uploads/* {
+		reverse_proxy api:5000
+	}
+	handle /health {
+		reverse_proxy api:5000
+	}
+	handle /socket.io/* {
+		reverse_proxy api:5000
+	}
+
+	# Everything else is the admin portal (SPA — unknown paths fall back to index.html)
+	handle {
+		root * /srv/portal
+		try_files {path} /index.html
+		file_server
+	}
+}

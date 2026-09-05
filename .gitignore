@@ -12,3 +12,8 @@ prisma/migrations/
 mobile-app/.dart_tool/
 mobile-app/build/
 mobile-app/.packages
+
+# Deployment secrets and build output
+deploy/.env
+deploy/portal/
+deploy/docker-compose.override.yml
