@@ -9,6 +9,14 @@
       "destination": "https://43-204-250-145.sslip.io/uploads/:path*"
     },
     {
+      "source": "/app",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/app/",
+      "destination": "/app/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
